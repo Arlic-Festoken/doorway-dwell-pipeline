@@ -1,0 +1,82 @@
+{
+  "dataset_name": "store_dwell_demo",
+  "default_project_root": ".",
+  "date": "2026-01-26",
+  "minimum_duration_seconds": 30,
+  "methods": [
+    {
+      "id": "A",
+      "name": "多视角",
+      "phase": "doorway_recovery_20261108",
+      "directory": "A_multiview"
+    },
+    {
+      "id": "B",
+      "name": "服装部位",
+      "phase": "doorway_recovery_20261108",
+      "directory": "B_parts"
+    },
+    {
+      "id": "C",
+      "name": "场景适配",
+      "phase": "doorway_recovery_20261108",
+      "directory": "F_scene_adapt"
+    },
+    {
+      "id": "D",
+      "name": "覆盖增强",
+      "phase": "doorway_recovery_20261108",
+      "directory": "C_coverage"
+    },
+    {
+      "id": "E",
+      "name": "候选扩展",
+      "phase": "doorway_recovery_20261108",
+      "directory": "E_exploration"
+    },
+    {
+      "id": "K",
+      "name": "同行辅助",
+      "phase": "doorway_recovery_20261108",
+      "directory": "D_companions"
+    },
+    {
+      "id": "F",
+      "name": "连续帧静态对照",
+      "phase": "doorway_temporal_20261109",
+      "directory": "F_dense_static"
+    },
+    {
+      "id": "G",
+      "name": "时序网络",
+      "phase": "doorway_temporal_20261109",
+      "directory": "G_temporal"
+    },
+    {
+      "id": "H",
+      "name": "时序顺序对齐",
+      "phase": "doorway_temporal_20261109",
+      "directory": "H_alignment"
+    },
+    {
+      "id": "I",
+      "name": "时序与外观融合",
+      "phase": "doorway_temporal_20261109",
+      "directory": "I_fusion"
+    },
+    {
+      "id": "J",
+      "name": "时序融合扩展",
+      "phase": "doorway_temporal_20261109",
+      "directory": "J_coverage"
+    }
+  ],
+  "recall_scope": "tier1_already_submitted_plus_all_returned_reviews",
+  "new_candidate_scope": "all_latest_examples_and_selected_short_competitors",
+  "deduplication_key": [
+    "entry_event",
+    "exit_event"
+  ],
+  "preserve_all_label_history": true,
+  "select_one_to_one_before_annotation": false
+}

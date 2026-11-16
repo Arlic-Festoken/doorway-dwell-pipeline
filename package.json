@@ -1,0 +1,13 @@
+{
+  "name": "doorway-dwell-pipeline",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "XLSX exporter helper for the Doorway Dwell-Time Reconstruction Pipeline",
+  "scripts": {
+    "export-xlsx": "node workflow/export_xlsx.mjs"
+  },
+  "dependencies": {
+    "@oai/artifact-tool": "*"
+  }
+}

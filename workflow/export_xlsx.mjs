@@ -1,0 +1,30 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {Workbook,SpreadsheetFile} from '@oai/artifact-tool';
+
+const here=path.dirname(fileURLToPath(import.meta.url));
+const inputPath=process.argv[2]??path.join(here,'../dataset/workbook_input.json');
+const output=process.argv[3]??path.join(here,'../dataset/统一标注表.xlsx');
+const input=JSON.parse(await fs.readFile(inputPath,'utf8')),rows=input.rows,last=rows.length+1;
+const epoch=(Date.parse(input.date+'T00:00:00Z')-Date.UTC(1899,11,30))/86400000;
+const wb=Workbook.create(),sheet=wb.worksheets.add('统一标注');sheet.showGridLines=false;
+sheet.getRange('A1:M1').values=[input.headers];
+sheet.getRange(`A2:M${last}`).values=rows.map(r=>[r.pair_id,epoch+r.entry_seconds/86400,epoch+r.exit_seconds/86400,null,/^[012]$/.test(r.label_display)?Number(r.label_display):r.label_display,null,null,null,r.source_methods.join('、'),r.entry_alternatives.length,r.exit_alternatives.length,null,r.record_use]);
+sheet.getRange('D2').formulas=[['=C2-B2']];sheet.getRange(`D2:D${last}`).fillDown();
+sheet.getRange(`L2:L${last}`).formulas=rows.map(r=>[`=HYPERLINK("${r.evidence_link}","查看视频/图片")`]);
+sheet.tables.add(`A1:M${last}`,true,'UnifiedAnnotations');
+sheet.getRange(`A1:M${last}`).format={font:{name:'Arial',size:11,color:'#263C47'},rowHeight:30,verticalAlignment:'center'};
+sheet.getRange('A1:M1').format={fill:'#285E64',font:{name:'Arial',size:11,bold:true,color:'#FFFFFF'},rowHeight:34};
+for(const [col,width] of [['A',21],['B',29],['C',29],['D',15],['E',17],['F',13],['G',19],['H',34],['I',46],['J',21],['K',21],['L',20],['M',18]])sheet.getRange(`${col}1:${col}${last}`).format.columnWidth=width;
+sheet.getRange(`B2:D${last}`).format.numberFormat=rows.map(r=>{
+ const ai=r.approximate_entry||r.entry_interval[1]-r.entry_interval[0]>.6,bi=r.exit_interval[1]-r.exit_interval[0]>.6;
+ return [(ai?'"约 "':'')+'yyyy-mm-dd hh:mm:ss',(bi?'"约 "':'')+'yyyy-mm-dd hh:mm:ss',((ai||bi)?'"约 "':'')+'[h]:mm:ss'];
+});
+sheet.getRange(`F2:H${last}`).format.fill='#FFF4CE';sheet.getRange('F1:H1').format.fill='#776327';
+sheet.getRange(`F2:F${last}`).dataValidation={rule:{type:'list',values:['0','1','2']}};
+sheet.getRange(`G2:G${last}`).dataValidation={rule:{type:'list',values:['是','否','不确定']}};
+sheet.getRange(`J2:K${last}`).setNumberFormat('0');sheet.getRange(`I2:I${last}`).format.wrapText=true;sheet.getRange(`I2:I${last}`).format.font={name:'Arial',size:10,color:'#526873'};
+sheet.freezePanes.freezeRows(1);sheet.freezePanes.freezeColumns(1);
+wb.recalculate();await fs.mkdir(path.dirname(output),{recursive:true});await(await SpreadsheetFile.exportXlsx(wb)).save(output);
+console.log(JSON.stringify({output,unique_rows:rows.length,sheets:1,annotation_columns:['本轮标注','进店动作成立','备注']}));

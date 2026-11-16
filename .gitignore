@@ -1,0 +1,42 @@
+# Datasets, raw videos, media, and generated outputs (never commit to GitHub)
+dataset/
+workflow/inputs/
+dist/
+logs/
+outputs/
+results/
+variants/
+crops/
+contexts/
+panels/
+videos/
+anchors/
+endpoints/
+
+# Artifacts & binary media/data formats
+*.xlsx
+*.csv
+*.zip
+*.tar
+*.tar.zst
+*.mp4
+*.avi
+*.jpg
+*.jpeg
+*.png
+!docs/assets/*.png
+*.jsonl
+*.pkl
+*.pt
+*.pth
+*.npz
+*.npy
+*.ndjson
+
+# Python / Node / OS caches
+__pycache__/
+*.pyc
+.venv*/
+node_modules/
+.DS_Store
+._*
