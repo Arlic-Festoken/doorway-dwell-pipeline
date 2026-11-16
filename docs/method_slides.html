@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>店铺停留时长重建方法</title>
+  <style>
+    :root {
+      --cardinal: #8C1515;
+      --cardinal-tint: #FAF2F2;
+      --black: #2E2D29;
+      --slate: #5F6368;
+      --stone: #E2E0DA;
+      --sand: #F7F6F2;
+      --teal: #006B81;
+      --teal-tint: #EFF6F8;
+      --pine: #175E54;
+      --pine-tint: #F1F7F5;
+      --amber: #B26F16;
+      --amber-tint: #FDF7ED;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", sans-serif;
+      background: #ECEBE6;
+      color: var(--black);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .stage {
+      width: min(94vw, calc(88vh * 16 / 9));
+      aspect-ratio: 16 / 9;
+      background: #FFFFFF;
+      border: 1px solid var(--stone);
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 12px 36px rgba(46, 45, 41, 0.08);
+    }
+
+    .slide {
+      display: none;
+      width: 100%;
+      height: 100%;
+      padding: 4.6% 5.5% 5.5% 5.5%;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+    .slide.active { display: flex; }
+
+    /* Top Stanford Bar */
+    .slide::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 5px;
+      background: var(--cardinal);
+    }
+
+    .slide.cover::before { display: none; }
+    .slide.cover::after {
+      content: "";
+      position: absolute;
+      top: 0; bottom: 0; left: 0;
+      width: 14px;
+      background: var(--cardinal);
+    }
+    .slide.cover {
+      padding-left: 8%;
+      justify-content: center;
+      gap: 36px;
+    }
+
+    .kicker {
+      font-size: clamp(11px, 1vw, 13px);
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--cardinal);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    h1 {
+      font-size: clamp(28px, 3.6vw, 48px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--black);
+      line-height: 1.15;
+    }
+
+    h2 {
+      font-size: clamp(20px, 2.2vw, 30px);
+      font-weight: 700;
+      color: var(--black);
+      line-height: 1.25;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--stone);
+    }
+
+    .subtitle {
+      font-size: clamp(15px, 1.5vw, 20px);
+      color: var(--slate);
+      margin-top: 10px;
+      font-weight: 400;
+    }
+
+    .cover-rule {
+      width: 72px;
+      height: 4px;
+      background: var(--cardinal);
+      margin: 8px 0;
+    }
+
+    .cover-pills {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    .pill {
+      background: var(--sand);
+      padding: 14px 16px;
+      border-top: 3px solid var(--cardinal);
+    }
+    .pill.teal { border-top-color: var(--teal); }
+    .pill.dark { border-top-color: var(--black); }
+    .pill.pine { border-top-color: var(--pine); }
+    .pill-num { font-size: 12px; font-weight: 700; color: var(--slate); margin-bottom: 4px; }
+    .pill-txt { font-size: clamp(13px, 1.2vw, 16px); font-weight: 700; color: var(--black); }
+
+    .body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 16px 0 8px 0;
+      min-height: 0;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      align-items: stretch;
+      height: 100%;
+    }
+
+    .three-col {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .panel {
+      background: var(--sand);
+      padding: 20px 22px;
+      border-top: 3px solid var(--cardinal);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 14px;
+    }
+    .panel.teal { background: var(--teal-tint); border-top-color: var(--teal); }
+    .panel.pine { background: var(--pine-tint); border-top-color: var(--pine); }
+    .panel.white { background: #fff; border: 1px solid var(--stone); border-top: 3px solid var(--cardinal); }
+
+    .panel-title {
+      font-size: clamp(15px, 1.35vw, 18px);
+      font-weight: 700;
+      color: var(--cardinal);
+    }
+    .panel.teal .panel-title { color: var(--teal); }
+    .panel.pine .panel-title { color: var(--pine); }
+
+    .method-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .method-row {
+      display: grid;
+      grid-template-columns: 58px 124px 1fr;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      background: #FFFFFF;
+      border-left: 3px solid var(--cardinal);
+      font-size: clamp(12px, 1.08vw, 14.5px);
+    }
+    .panel.teal .method-row { border-left-color: var(--teal); }
+
+    .badge {
+      font-weight: 700;
+      font-size: clamp(11px, 1vw, 13px);
+      color: var(--cardinal);
+      background: var(--cardinal-tint);
+      text-align: center;
+      padding: 3px 6px;
+      border-radius: 3px;
+    }
+    .panel.teal .badge { color: var(--teal); background: var(--teal-tint); }
+    .m-name { font-weight: 700; color: var(--black); }
+    .m-why { color: var(--slate); }
+
+    .clean-points {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .clean-points li {
+      font-size: clamp(13px, 1.25vw, 16px);
+      line-height: 1.45;
+      padding-left: 16px;
+      position: relative;
+      color: var(--black);
+    }
+    .clean-points li::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 0.55em;
+      width: 6px; height: 6px;
+      background: var(--cardinal);
+    }
+    .panel.pine .clean-points li::before { background: var(--pine); }
+    .panel.teal .clean-points li::before { background: var(--teal); }
+    .clean-points b { color: var(--black); }
+
+    .takeaway {
+      margin-top: 14px;
+      padding: 12px 18px;
+      background: var(--cardinal-tint);
+      border-left: 4px solid var(--cardinal);
+      font-size: clamp(13px, 1.15vw, 15px);
+      font-weight: 600;
+      color: var(--black);
+    }
+
+    svg { width: 100%; height: auto; display: block; }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 10px;
+      border-top: 1px solid var(--stone);
+      font-size: 12px;
+      color: var(--slate);
+    }
+    .page-num { font-weight: 700; color: var(--cardinal); }
+
+    /* Bottom controls outside stage */
+    .controls {
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      color: var(--slate);
+    }
+    .btn {
+      background: #FFFFFF;
+      border: 1px solid var(--stone);
+      color: var(--black);
+      padding: 6px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .btn:hover { border-color: var(--cardinal); color: var(--cardinal); }
+    .dots { display: flex; gap: 6px; }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #CCCAC2; cursor: pointer;
+    }
+    .dot.active { background: var(--cardinal); width: 20px; border-radius: 4px; }
+
+    /* Overview mode */
+    body.overview .stage {
+      width: 94vw; height: 86vh; aspect-ratio: auto;
+      overflow-y: auto; padding: 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 20px;
+      background: #ECEBE6;
+      box-shadow: none;
+      border: none;
+    }
+    body.overview .slide {
+      display: flex !important;
+      aspect-ratio: 16 / 9;
+      background: #fff;
+      border: 1px solid var(--stone);
+      cursor: pointer;
+      transform: scale(1);
+    }
+    body.overview .slide:hover { outline: 3px solid var(--cardinal); }
+
+    @media print {
+      body { background: #fff; height: auto; overflow: visible; display: block; }
+      .controls { display: none; }
+      .stage { width: 100%; aspect-ratio: auto; box-shadow: none; border: none; }
+      .slide { display: flex !important; page-break-after: always; height: 100vh; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+
+  <!-- SLIDE 1: Cover -->
+  <section class="slide cover active">
+    <div>
+      <div class="kicker">METHODOLOGY</div>
+      <h1>店铺停留时长重建方法</h1>
+      <div class="subtitle">五阶段划分 · 多路匹配原理 · 标注与终表筛选</div>
+    </div>
+    <div class="cover-rule"></div>
+    <div class="cover-pills">
+      <div class="pill"><div class="pill-num">PART 01</div><div class="pill-txt">门口端点构建</div></div>
+      <div class="pill teal"><div class="pill-num">PART 02</div><div class="pill-txt">静态 + 时序匹配</div></div>
+      <div class="pill"><div class="pill-num">PART 03</div><div class="pill-txt">高召回与补入口</div></div>
+      <div class="pill dark"><div class="pill-num">PART 04</div><div class="pill-txt">去重与证据封装</div></div>
+      <div class="pill pine"><div class="pill-num">PART 05</div><div class="pill-txt">标注复核与筛选</div></div>
+    </div>
+  </section>
+
+  <!-- SLIDE 2: 总体流程划分 -->
+  <section class="slide">
+    <div>
+      <div class="kicker">OVERVIEW</div>
+      <h2>总体流程划分：宽进候选，严出终表</h2>
+    </div>
+    <div class="body">
+      <svg viewBox="0 0 1100 350" xmlns="http://www.w3.org/2000/svg">
+        <!-- Top stage brackets -->
+        <line x1="15" y1="24" x2="855" y2="24" stroke="#8C1515" stroke-width="2.5"/>
+        <text x="435" y="16" text-anchor="middle" font-size="14" font-weight="700" fill="#8C1515">阶段一：候选生成与聚合（最大化留存合法假设）</text>
+        <line x1="885" y1="24" x2="1085" y2="24" stroke="#175E54" stroke-width="2.5"/>
+        <text x="985" y="16" text-anchor="middle" font-size="14" font-weight="700" fill="#175E54">阶段二：终表筛选</text>
+
+        <!-- Part 1 -->
+        <rect x="15" y="45" width="190" height="215" fill="#FAF2F2" stroke="#E2E0DA"/>
+        <rect x="15" y="45" width="190" height="5" fill="#8C1515"/>
+        <text x="110" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#8C1515">PART 1</text>
+        <text x="110" y="106" text-anchor="middle" font-size="17" font-weight="700" fill="#2E2D29">端点构建</text>
+        <line x1="40" y1="126" x2="180" y2="126" stroke="#E2E0DA"/>
+        <text x="110" y="162" text-anchor="middle" font-size="14" fill="#2E2D29">锚点局部扩展</text>
+        <text x="110" y="190" text-anchor="middle" font-size="14" fill="#2E2D29">遮挡脚点校准</text>
+        <text x="110" y="218" text-anchor="middle" font-size="14" fill="#2E2D29">统一 PTS 时钟</text>
+        <rect x="30" y="285" width="160" height="36" rx="4" fill="#fff" stroke="#8C1515"/>
+        <text x="110" y="308" text-anchor="middle" font-size="13" font-weight="700" fill="#8C1515">可信门口片段</text>
+        <line x1="110" y1="260" x2="110" y2="285" stroke="#8C1515" stroke-width="1.5"/>
+
+        <text x="220" y="158" text-anchor="middle" font-size="22" font-weight="700" fill="#5F6368">→</text>
+
+        <!-- Part 2 -->
+        <rect x="235" y="45" width="190" height="215" fill="#EFF6F8" stroke="#E2E0DA"/>
+        <rect x="235" y="45" width="190" height="5" fill="#006B81"/>
+        <text x="330" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#006B81">PART 2</text>
+        <text x="330" y="106" text-anchor="middle" font-size="17" font-weight="700" fill="#2E2D29">双路匹配</text>
+        <line x1="260" y1="126" x2="400" y2="126" stroke="#E2E0DA"/>
+        <text x="330" y="162" text-anchor="middle" font-size="14" fill="#2E2D29">静态：多视角+Lab</text>
+        <text x="330" y="190" text-anchor="middle" font-size="14" fill="#2E2D29">时序：TCN+DTW</text>
+        <text x="330" y="218" text-anchor="middle" font-size="14" fill="#2E2D29">对数几率融合</text>
+        <rect x="250" y="285" width="160" height="36" rx="4" fill="#fff" stroke="#006B81"/>
+        <text x="330" y="308" text-anchor="middle" font-size="13" font-weight="700" fill="#006B81">多方法进出假设</text>
+        <line x1="330" y1="260" x2="330" y2="285" stroke="#006B81" stroke-width="1.5"/>
+
+        <text x="440" y="158" text-anchor="middle" font-size="22" font-weight="700" fill="#5F6368">→</text>
+
+        <!-- Part 3 -->
+        <rect x="455" y="45" width="190" height="215" fill="#FAF2F2" stroke="#E2E0DA"/>
+        <rect x="455" y="45" width="190" height="5" fill="#8C1515"/>
+        <text x="550" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#8C1515">PART 3</text>
+        <text x="550" y="106" text-anchor="middle" font-size="17" font-weight="700" fill="#2E2D29">高召回补全</text>
+        <line x1="480" y1="126" x2="620" y2="126" stroke="#E2E0DA"/>
+        <text x="550" y="162" text-anchor="middle" font-size="14" fill="#2E2D29">11路双向 Top-K</text>
+        <text x="550" y="190" text-anchor="middle" font-size="14" fill="#2E2D29">LR+HGB 反馈挖掘</text>
+        <text x="550" y="218" text-anchor="middle" font-size="14" fill="#2E2D29">姿态重挖补入口</text>
+        <rect x="470" y="285" width="160" height="36" rx="4" fill="#fff" stroke="#8C1515"/>
+        <text x="550" y="308" text-anchor="middle" font-size="13" font-weight="700" fill="#8C1515">无遗漏候选集</text>
+        <line x1="550" y1="260" x2="550" y2="285" stroke="#8C1515" stroke-width="1.5"/>
+
+        <text x="660" y="158" text-anchor="middle" font-size="22" font-weight="700" fill="#5F6368">→</text>
+
+        <!-- Part 4 -->
+        <rect x="675" y="45" width="180" height="215" fill="#F7F6F2" stroke="#E2E0DA"/>
+        <rect x="675" y="45" width="180" height="5" fill="#2E2D29"/>
+        <text x="765" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">PART 4</text>
+        <text x="765" y="106" text-anchor="middle" font-size="17" font-weight="700" fill="#2E2D29">去重封装</text>
+        <line x1="700" y1="126" x2="830" y2="126" stroke="#E2E0DA"/>
+        <text x="765" y="162" text-anchor="middle" font-size="14" fill="#2E2D29">主键去重归并</text>
+        <text x="765" y="190" text-anchor="middle" font-size="14" fill="#2E2D29">暴露竞争配法</text>
+        <text x="765" y="218" text-anchor="middle" font-size="14" fill="#2E2D29">共享证据打包</text>
+        <rect x="685" y="285" width="160" height="36" rx="4" fill="#fff" stroke="#2E2D29"/>
+        <text x="765" y="308" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">唯一统一标注表</text>
+        <line x1="765" y1="260" x2="765" y2="285" stroke="#2E2D29" stroke-width="1.5"/>
+
+        <text x="870" y="158" text-anchor="middle" font-size="22" font-weight="700" fill="#5F6368">→</text>
+
+        <!-- Part 5 -->
+        <rect x="885" y="45" width="200" height="215" fill="#F1F7F5" stroke="#E2E0DA"/>
+        <rect x="885" y="45" width="200" height="5" fill="#175E54"/>
+        <text x="985" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#175E54">PART 5</text>
+        <text x="985" y="106" text-anchor="middle" font-size="17" font-weight="700" fill="#2E2D29">标注筛选</text>
+        <line x1="910" y1="126" x2="1060" y2="126" stroke="#E2E0DA"/>
+        <text x="985" y="162" text-anchor="middle" font-size="14" fill="#2E2D29">0/1/2 交叉复核</text>
+        <text x="985" y="190" text-anchor="middle" font-size="14" fill="#2E2D29">&lt;30s 先占位再剔</text>
+        <text x="985" y="218" text-anchor="middle" font-size="14" fill="#2E2D29">一对一端点消歧</text>
+        <rect x="905" y="285" width="160" height="36" rx="4" fill="#fff" stroke="#175E54"/>
+        <text x="985" y="308" text-anchor="middle" font-size="13" font-weight="700" fill="#175E54">三列停留终表</text>
+        <line x1="985" y1="260" x2="985" y2="285" stroke="#175E54" stroke-width="1.5"/>
+      </svg>
+      <div class="takeaway">核心思路：前四步不提前用硬阈值淘汰候选，第五步集中通过视觉复核与一对一消歧确保可计数精度。</div>
+    </div>
+    <div class="footer"><span>店铺停留时长重建方法</span><span class="page-num">2 / 7</span></div>
+  </section>
+
+  <!-- SLIDE 3: Part 1 端点构建 -->
+  <section class="slide">
+    <div>
+      <div class="kicker">PART 1 · ENDPOINTS</div>
+      <h2>Part 1 · 门口端点构建：先建可信片段，再谈配对</h2>
+    </div>
+    <div class="body">
+      <div class="two-col">
+        <div style="display:flex; flex-direction:column; justify-content:center;">
+          <svg viewBox="0 0 540 340" xmlns="http://www.w3.org/2000/svg">
+            <text x="10" y="24" font-size="14" font-weight="700" fill="#8C1515">A. 局部锚点扩展（遇遮挡即断开）</text>
+            <rect x="10" y="42" width="76" height="58" rx="6" fill="#fff" stroke="#175E54" stroke-width="2"/>
+            <text x="48" y="76" text-anchor="middle" font-size="13" font-weight="700" fill="#175E54">t-2</text>
+            <text x="98" y="75" text-anchor="middle" font-size="14" fill="#175E54">↔</text>
+            <rect x="110" y="42" width="76" height="58" rx="6" fill="#fff" stroke="#175E54" stroke-width="2"/>
+            <text x="148" y="76" text-anchor="middle" font-size="13" font-weight="700" fill="#175E54">t-1</text>
+            <text x="198" y="75" text-anchor="middle" font-size="14" fill="#175E54">↔</text>
+            <rect x="210" y="42" width="84" height="58" rx="6" fill="#FAF2F2" stroke="#8C1515" stroke-width="2.5"/>
+            <text x="252" y="76" text-anchor="middle" font-size="13" font-weight="700" fill="#8C1515">t0 锚点</text>
+            <text x="306" y="75" text-anchor="middle" font-size="14" fill="#175E54">↔</text>
+            <rect x="318" y="42" width="76" height="58" rx="6" fill="#fff" stroke="#175E54" stroke-width="2"/>
+            <text x="356" y="76" text-anchor="middle" font-size="13" font-weight="700" fill="#175E54">t+1</text>
+            <text x="412" y="77" text-anchor="middle" font-size="18" font-weight="700" fill="#8C1515">×</text>
+            <rect x="430" y="42" width="96" height="58" rx="6" fill="#fff" stroke="#B26F16" stroke-width="2" stroke-dasharray="5,4"/>
+            <text x="478" y="76" text-anchor="middle" font-size="13" font-weight="700" fill="#B26F16">遮挡截断</text>
+
+            <rect x="10" y="116" width="516" height="32" rx="4" fill="#F7F6F2"/>
+            <text x="268" y="137" text-anchor="middle" font-size="12" font-weight="600" fill="#5F6368">IoU &gt; 0.5   ·   脚点位移 ≤ 0.35H   ·   Δt ≤ 0.25s   ·   重叠 &gt; 0.3 断开</text>
+
+            <line x1="10" y1="172" x2="526" y2="172" stroke="#E2E0DA" stroke-dasharray="4,4"/>
+
+            <text x="10" y="206" font-size="14" font-weight="700" fill="#006B81">B. 遮挡入口脚点校准（脚被挡但躯干连续）</text>
+            <rect x="10" y="226" width="145" height="64" rx="6" fill="#EFF6F8" stroke="#006B81" stroke-width="1.5"/>
+            <text x="82" y="253" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">躯干连续切分</text>
+            <text x="82" y="274" text-anchor="middle" font-size="12" fill="#5F6368">锁定稳定短轨</text>
+            <text x="172" y="262" text-anchor="middle" font-size="18" font-weight="700" fill="#006B81">→</text>
+            <rect x="190" y="226" width="155" height="64" rx="6" fill="#EFF6F8" stroke="#006B81" stroke-width="1.5"/>
+            <text x="267" y="253" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">脚踝–框底偏移</text>
+            <text x="267" y="274" text-anchor="middle" font-size="12" fill="#5F6368">推算遮挡脚点</text>
+            <text x="362" y="262" text-anchor="middle" font-size="18" font-weight="700" fill="#006B81">→</text>
+            <rect x="380" y="226" width="146" height="64" rx="6" fill="#EFF6F8" stroke="#006B81" stroke-width="1.5"/>
+            <text x="453" y="253" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">补全过线区间</text>
+            <text x="453" y="274" text-anchor="middle" font-size="12" fill="#5F6368">宽区间标「约」</text>
+          </svg>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">核心原则</div>
+          <ul class="clean-points">
+            <li><b>只建门口片段</b>：不重建全店长轨迹，避免跨遮挡错误拼接。</li>
+            <li><b>断轨不强连</b>：跨断轨片段分开保留，交由下游核验。</li>
+            <li><b>找回漏入口</b>：通过躯干连续 + 脚踝偏移校准恢复遮挡入口。</li>
+            <li><b>统一时间轴</b>：全流程绑定原视频 PTS 与时钟偏移。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span>店铺停留时长重建方法</span><span class="page-num">3 / 7</span></div>
+  </section>
+
+  <!-- SLIDE 4: Part 2 所有方法意义一览 -->
+  <section class="slide">
+    <div>
+      <div class="kicker">PART 2 · MATCHING METHODS</div>
+      <h2>Part 2 · 所有匹配方法的意义（一眼看懂 A–J + K）</h2>
+    </div>
+    <div class="body">
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-title">静态路径：多视角模板 + 全局分配</div>
+          <div class="method-list">
+            <div class="method-row"><span class="badge">A</span><span class="m-name">多视角模板</span><span class="m-why">克服单帧侧/背影差（缺主模型切 COPE）</span></div>
+            <div class="method-row"><span class="badge">B</span><span class="m-name">部位颜色</span><span class="m-why">加入上下衣 Lab 色差直方图</span></div>
+            <div class="method-row"><span class="badge">C</span><span class="m-name">场景适配</span><span class="m-why">本地连续正负样本无泄漏校准</span></div>
+            <div class="method-row"><span class="badge">D / E</span><span class="m-name">阈值扩展</span><span class="m-why">阶梯放宽全局对数几率门槛扩召回</span></div>
+            <div class="method-row"><span class="badge">K</span><span class="m-name">同行辅助</span><span class="m-why">区分衣着相近的结伴同行人员</span></div>
+          </div>
+        </div>
+
+        <div class="panel teal">
+          <div class="panel-title">时序路径：有序切片 + 顺序对齐</div>
+          <div class="method-list">
+            <div class="method-row"><span class="badge">F</span><span class="m-name">连续帧对照</span><span class="m-why">同批帧的静态基准（验证“顺序”收益）</span></div>
+            <div class="method-row"><span class="badge">G</span><span class="m-name">膨胀 TCN</span><span class="m-why">冻结 COPE + 帧差/运动 + d=1,2,4 卷积</span></div>
+            <div class="method-row"><span class="badge">H</span><span class="m-name">DTW 对齐</span><span class="m-why">允许整段反向，对抗进出转身剧变</span></div>
+            <div class="method-row"><span class="badge">I / J</span><span class="m-name">跨模态融合</span><span class="m-why">0.65 时序 + 0.35 静态 B，缺段平滑回退</span></div>
+          </div>
+          <div style="margin-top:8px; padding:10px 14px; background:#fff; border-left:3px solid var(--teal); font-size:13px; color:var(--black);">
+            <b>分配突破</b>：放弃“双向第一”硬门槛，采用<b>双向前 K 并集 + 带拒绝边的全局优化 + 替代差距约束</b>。
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span>店铺停留时长重建方法</span><span class="page-num">4 / 7</span></div>
+  </section>
+
+  <!-- SLIDE 5: Part 3 高召回与反馈挖掘 -->
+  <section class="slide">
+    <div>
+      <div class="kicker">PART 3 · RECALL &amp; MINING</div>
+      <h2>Part 3 · 高召回汇总（R）与反馈挖掘（N）</h2>
+    </div>
+    <div class="body">
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-title">R · 多通道双向高召回</div>
+          <svg viewBox="0 0 460 155" xmlns="http://www.w3.org/2000/svg">
+            <rect x="4" y="18" width="128" height="72" rx="5" fill="#fff" stroke="#8C1515" stroke-width="1.5"/>
+            <text x="68" y="48" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">11 路异构通道</text>
+            <text x="68" y="70" text-anchor="middle" font-size="11.5" fill="#5F6368">静态/时序/COPE/DTW</text>
+            <text x="148" y="59" text-anchor="middle" font-size="18" font-weight="700" fill="#8C1515">→</text>
+            <rect x="164" y="18" width="132" height="72" rx="5" fill="#fff" stroke="#8C1515" stroke-width="1.5"/>
+            <text x="230" y="48" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">双向 Top-K 并集</text>
+            <text x="230" y="70" text-anchor="middle" font-size="11.5" fill="#5F6368">取消硬截断锁死</text>
+            <text x="312" y="59" text-anchor="middle" font-size="18" font-weight="700" fill="#8C1515">→</text>
+            <rect x="328" y="18" width="128" height="72" rx="5" fill="#8C1515"/>
+            <text x="392" y="48" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">LR 优先级排序</text>
+            <text x="392" y="70" text-anchor="middle" font-size="11.5" fill="#FADADA">只排序 · 不删候选</text>
+            <rect x="4" y="110" width="452" height="32" rx="4" fill="#fff" stroke="#E2E0DA"/>
+            <text x="230" y="131" text-anchor="middle" font-size="12" font-weight="600" fill="#8C1515">缺连续模板端点 → 单锚点上下文入池（标示未连续验证）</text>
+          </svg>
+          <ul class="clean-points">
+            <li><b>为什么做高召回</b>：A–J 单版各自有盲区，先合并才能覆盖真实进出。</li>
+          </ul>
+        </div>
+
+        <div class="panel pine">
+          <div class="panel-title">N · 反馈挖掘与遮挡补入口</div>
+          <svg viewBox="0 0 460 155" xmlns="http://www.w3.org/2000/svg">
+            <rect x="4" y="18" width="196" height="54" rx="5" fill="#fff" stroke="#175E54" stroke-width="1.5"/>
+            <text x="102" y="41" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">LR + HGB 反馈双模型</text>
+            <text x="102" y="59" text-anchor="middle" font-size="11.5" fill="#5F6368">无分歧反馈训练（不递归）</text>
+            <text x="220" y="50" text-anchor="middle" font-size="18" font-weight="700" fill="#175E54">→</text>
+            <rect x="240" y="18" width="216" height="54" rx="5" fill="#fff" stroke="#175E54" stroke-width="1.5"/>
+            <text x="348" y="41" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">多视角正例模板回捞</text>
+            <text x="348" y="59" text-anchor="middle" font-size="11.5" fill="#5F6368">排除已判负与重叠冲突</text>
+
+            <rect x="4" y="92" width="196" height="54" rx="5" fill="#fff" stroke="#006B81" stroke-width="1.5"/>
+            <text x="102" y="115" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">全事件姿态回查</text>
+            <text x="102" y="133" text-anchor="middle" font-size="11.5" fill="#5F6368">双脚踝 / 躯干+框底校准</text>
+            <text x="220" y="124" text-anchor="middle" font-size="18" font-weight="700" fill="#006B81">→</text>
+            <rect x="240" y="92" width="216" height="54" rx="5" fill="#175E54"/>
+            <text x="348" y="115" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">补入口完备匹配导出</text>
+            <text x="348" y="133" text-anchor="middle" font-size="11.5" fill="#DCEEE9">保留全部达标出口不截断</text>
+          </svg>
+          <ul class="clean-points">
+            <li><b>为什么做补全</b>：把反馈真值线索与被遮挡的入口重新送入候选池。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span>店铺停留时长重建方法</span><span class="page-num">5 / 7</span></div>
+  </section>
+
+  <!-- SLIDE 6: Part 4 去重与封装 -->
+  <section class="slide">
+    <div>
+      <div class="kicker">PART 4 · UNIFICATION</div>
+      <h2>Part 4 · 主键去重与自包含证据封装</h2>
+    </div>
+    <div class="body">
+      <svg viewBox="0 0 1060 120" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 24px;">
+        <rect x="10" y="16" width="290" height="84" rx="6" fill="#FAF2F2" stroke="#8C1515" stroke-width="1.5"/>
+        <text x="155" y="50" text-anchor="middle" font-size="16" font-weight="700" fill="#8C1515">多路候选并集</text>
+        <text x="155" y="76" text-anchor="middle" font-size="13" fill="#5F6368">A–E/K · F–J · 召回 R · 补入口 N · 历史</text>
+
+        <text x="340" y="64" text-anchor="middle" font-size="24" font-weight="700" fill="#5F6368">→</text>
+
+        <rect x="380" y="16" width="300" height="84" rx="6" fill="#2E2D29"/>
+        <text x="530" y="50" text-anchor="middle" font-size="16" font-weight="700" fill="#fff">主键去重：Ixxxx_Oyyyy</text>
+        <text x="530" y="76" text-anchor="middle" font-size="13" fill="#E2E0DA">合并同一进出，拼接全部来源血缘</text>
+
+        <text x="720" y="64" text-anchor="middle" font-size="24" font-weight="700" fill="#5F6368">→</text>
+
+        <rect x="760" y="16" width="290" height="84" rx="6" fill="#F1F7F5" stroke="#175E54" stroke-width="1.5"/>
+        <text x="905" y="50" text-anchor="middle" font-size="16" font-weight="700" fill="#175E54">统一单表 + 离线证据包</text>
+        <text x="905" y="76" text-anchor="middle" font-size="13" fill="#5F6368">XLSX · JSONL 模型任务 · HTML 审核页</text>
+      </svg>
+
+      <div class="three-col">
+        <div class="panel white">
+          <div class="panel-title">1. 只标一次</div>
+          <ul class="clean-points"><li>多方法命中的同一进出对合并为一行，按编号回填不靠行号。</li></ul>
+        </div>
+        <div class="panel white" style="border-top-color: var(--teal);">
+          <div class="panel-title" style="color:var(--teal);">2. 竞争透明</div>
+          <ul class="clean-points"><li>显式给出同进/同出其他配法计数，网页一键跳转对比。</li></ul>
+        </div>
+        <div class="panel white" style="border-top-color: var(--pine);">
+          <div class="panel-title" style="color:var(--pine);">3. 媒体共享</div>
+          <ul class="clean-points"><li>裁剪与视频按端点存一次；模型任务屏蔽排序分防暗示。</li></ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span>店铺停留时长重建方法</span><span class="page-num">6 / 7</span></div>
+  </section>
+
+  <!-- SLIDE 7: Part 5 标注复核与终表筛选 -->
+  <section class="slide">
+    <div>
+      <div class="kicker">PART 5 · FILTERING</div>
+      <h2>Part 5 · 分层标注复核与三步终表筛选</h2>
+    </div>
+    <div class="body">
+      <div class="two-col">
+        <div style="display:flex; flex-direction:column; justify-content:center;">
+          <svg viewBox="0 0 520 340" xmlns="http://www.w3.org/2000/svg">
+            <text x="260" y="22" text-anchor="middle" font-size="14" font-weight="700" fill="#2E2D29">二分图消歧与短停留占位机制</text>
+
+            <rect x="20" y="65" width="95" height="44" rx="6" fill="#F7F6F2" stroke="#2E2D29" stroke-width="1.5"/>
+            <text x="67" y="92" text-anchor="middle" font-size="14" font-weight="700" fill="#2E2D29">入口 A</text>
+            <rect x="405" y="65" width="95" height="44" rx="6" fill="#F7F6F2" stroke="#2E2D29" stroke-width="1.5"/>
+            <text x="452" y="92" text-anchor="middle" font-size="14" font-weight="700" fill="#2E2D29">出口 1</text>
+            <line x1="120" y1="87" x2="398" y2="87" stroke="#175E54" stroke-width="3.5"/>
+            <text x="260" y="74" text-anchor="middle" font-size="12.5" font-weight="700" fill="#175E54">双确认唯一边（≥30s → 进终表）</text>
+
+            <rect x="20" y="155" width="95" height="44" rx="6" fill="#F7F6F2" stroke="#2E2D29" stroke-width="1.5"/>
+            <text x="67" y="182" text-anchor="middle" font-size="14" font-weight="700" fill="#2E2D29">入口 B</text>
+            <rect x="405" y="155" width="95" height="44" rx="6" fill="#F7F6F2" stroke="#2E2D29" stroke-width="1.5"/>
+            <text x="452" y="182" text-anchor="middle" font-size="14" font-weight="700" fill="#2E2D29">出口 2</text>
+            <line x1="120" y1="177" x2="398" y2="177" stroke="#B26F16" stroke-width="3.2"/>
+            <text x="260" y="164" text-anchor="middle" font-size="12.5" font-weight="700" fill="#B26F16">短停留 (&lt;30s)：先占位阻断错配，后剔除</text>
+
+            <line x1="120" y1="190" x2="398" y2="255" stroke="#CCCAC2" stroke-width="2" stroke-dasharray="6,4"/>
+
+            <rect x="20" y="245" width="95" height="44" rx="6" fill="#F7F6F2" stroke="#2E2D29" stroke-width="1.5"/>
+            <text x="67" y="272" text-anchor="middle" font-size="14" font-weight="700" fill="#2E2D29">入口 C</text>
+            <rect x="405" y="245" width="95" height="44" rx="6" fill="#F7F6F2" stroke="#2E2D29" stroke-width="1.5"/>
+            <text x="452" y="272" text-anchor="middle" font-size="14" font-weight="700" fill="#2E2D29">出口 3</text>
+            <line x1="120" y1="267" x2="398" y2="267" stroke="#8C1515" stroke-width="3.2"/>
+            <line x1="120" y1="255" x2="398" y2="190" stroke="#8C1515" stroke-width="1.8" stroke-dasharray="4,4"/>
+            <text x="260" y="294" text-anchor="middle" font-size="12.5" font-weight="700" fill="#8C1515">一对多冲突簇：按置信层级唯一择一</text>
+
+            <text x="260" y="330" text-anchor="middle" font-size="12" font-weight="600" fill="#5F6368">约束：每个入口 / 出口最多归属 1 次到访</text>
+          </svg>
+        </div>
+
+        <div class="panel pine">
+          <div class="panel-title">下游三步筛选规则</div>
+          <ul class="clean-points">
+            <li><b>1. 交叉复核</b>：严格区分 <code>0</code> 异人 / <code>1</code> 同人 / <code>2</code> 存疑（不作负例），结合历史与视觉大模型交叉定位核心集与分歧集。</li>
+            <li><b>2. 短停留隔离</b>：不足 30 秒的配对先在二分图中占住端口防错配，消歧后从终表剔除。</li>
+            <li><b>3. 一对一消歧导出</b>：解开共用端点的竞争冲突，按编号回填后输出三列终表（进入时间 · 出店时间 · 停留时间）。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span>店铺停留时长重建方法</span><span class="page-num">7 / 7</span></div>
+  </section>
+
+</div>
+
+<div class="controls">
+  <button class="btn" onclick="prev()">← 上一页</button>
+  <div class="dots" id="dots"></div>
+  <button class="btn" onclick="next()">下一页 →</button>
+  <button class="btn" onclick="toggleOverview()">总览 (G)</button>
+  <button class="btn" onclick="toggleFullscreen()">全屏 (F)</button>
+</div>
+
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  const dotsEl = document.getElementById('dots');
+  let cur = 0;
+
+  slides.forEach((s, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => go(i);
+    dotsEl.appendChild(d);
+    s.addEventListener('click', () => {
+      if (document.body.classList.contains('overview')) {
+        document.body.classList.remove('overview');
+        go(i);
+      }
+    });
+  });
+
+  function go(idx) {
+    cur = Math.max(0, Math.min(slides.length - 1, idx));
+    slides.forEach((s, i) => s.classList.toggle('active', i === cur));
+    [...dotsEl.children].forEach((d, i) => d.classList.toggle('active', i === cur));
+  }
+  function next() { go(cur + 1); }
+  function prev() { go(cur - 1); }
+  function toggleOverview() { document.body.classList.toggle('overview'); }
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+    else document.exitFullscreen();
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+    else if (e.key.toLowerCase() === 'g') toggleOverview();
+    else if (e.key.toLowerCase() === 'f') toggleFullscreen();
+  });
+</script>
+</body>
+</html>
