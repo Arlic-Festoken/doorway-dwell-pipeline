@@ -4,27 +4,55 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>店铺停留时长重建 · 方法路线与模块详解</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
+      --bg-outer: #F1F2F4;
+      --surface: #FFFFFF;
+      --surface-soft: #F8F9FB;
+      --surface-warm: #FAF9F7;
+      --ink: #18181B;
+      --ink-2: #3F3F46;
+      --muted: #71717A;
+      --border: rgba(24, 24, 27, 0.08);
+      --border-strong: rgba(24, 24, 27, 0.14);
+
+      /* Refined Semantic Palette */
       --cardinal: #8C1515;
-      --cardinal-tint: #FAF2F2;
-      --black: #2E2D29;
-      --slate: #5F6368;
-      --stone: #E2E0DA;
-      --sand: #F7F6F2;
-      --teal: #006B81;
-      --teal-tint: #EFF6F8;
-      --pine: #175E54;
-      --pine-tint: #F1F7F5;
-      --amber: #B26F16;
+      --cardinal-soft: rgba(140, 21, 21, 0.06);
+      --cardinal-bd: rgba(140, 21, 21, 0.18);
+
+      --ref: #2B5B84;
+      --ref-soft: #F2F6FA;
+      --ref-bd: rgba(43, 91, 132, 0.18);
+
+      --stitch: #9A2B2B;
+      --stitch-soft: #FDF4F4;
+      --stitch-bd: rgba(154, 43, 43, 0.18);
+
+      --innov: #1B6B58;
+      --innov-soft: #F1F8F6;
+      --innov-bd: rgba(27, 107, 88, 0.18);
+
+      --amber: #A16207;
+      --amber-soft: #FEF9EC;
+      --amber-bd: rgba(161, 98, 7, 0.22);
+
+      --shadow-stage: 0 24px 64px rgba(15, 23, 42, 0.08), 0 2px 8px rgba(15, 23, 42, 0.04);
+      --shadow-card: 0 2px 10px rgba(15, 23, 42, 0.03), 0 1px 2px rgba(15, 23, 42, 0.03);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", sans-serif;
-      background: #ECEBE6;
-      color: var(--black);
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Noto Sans SC", "Hiragino Sans GB", sans-serif;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(140, 21, 21, 0.045), transparent 42%),
+        radial-gradient(circle at 85% 88%, rgba(43, 91, 132, 0.045), transparent 44%),
+        var(--bg-outer);
+      color: var(--ink);
       height: 100vh;
       overflow: hidden;
       display: flex;
@@ -32,228 +60,475 @@
       align-items: center;
       justify-content: center;
       -webkit-font-smoothing: antialiased;
+      font-feature-settings: "tnum" 1, "cv02" 1;
     }
 
     .stage {
-      width: min(94vw, calc(88vh * 16 / 9));
+      width: min(94vw, calc(87vh * 16 / 9));
       aspect-ratio: 16 / 9;
-      background: #FFFFFF;
-      border: 1px solid var(--stone);
-      border-radius: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
       position: relative;
       overflow: hidden;
-      box-shadow: 0 12px 36px rgba(46, 45, 41, 0.08);
+      box-shadow: var(--shadow-stage);
     }
 
     .slide {
       display: none;
       width: 100%;
       height: 100%;
-      padding: 4.2% 5.0% 4.6% 5.0%;
+      padding: 3.8% 4.8% 3.6% 4.8%;
       flex-direction: column;
       justify-content: space-between;
       position: relative;
+      background:
+        radial-gradient(circle at 96% 4%, rgba(140, 21, 21, 0.025), transparent 36%),
+        #FFFFFF;
     }
-    .slide.active { display: flex; }
+    .slide.active {
+      display: flex;
+      animation: fadeSlide 0.22s ease-out;
+    }
+    @keyframes fadeSlide {
+      from { opacity: 0.4; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
+    /* Subtle top accent bar */
     .slide::before {
       content: "";
       position: absolute;
       top: 0; left: 0; right: 0;
-      height: 5px;
-      background: var(--cardinal);
+      height: 3.5px;
+      background: linear-gradient(90deg, var(--cardinal) 0%, #B83A4B 45%, rgba(43, 91, 132, 0.65) 100%);
     }
 
+    /* Cover Layout */
     .slide.cover::before { display: none; }
+    .slide.cover {
+      padding: 6% 7% 6% 8%;
+      justify-content: center;
+      gap: 28px;
+      background:
+        radial-gradient(circle at 86% 18%, rgba(140, 21, 21, 0.055), transparent 45%),
+        radial-gradient(circle at 75% 85%, rgba(43, 91, 132, 0.045), transparent 40%),
+        #FFFFFF;
+    }
     .slide.cover::after {
       content: "";
       position: absolute;
       top: 0; bottom: 0; left: 0;
-      width: 14px;
-      background: var(--cardinal);
-    }
-    .slide.cover {
-      padding-left: 8%;
-      justify-content: center;
-      gap: 30px;
+      width: 8px;
+      background: linear-gradient(180deg, var(--cardinal) 0%, #B83A4B 100%);
     }
 
-    .kicker {
-      font-size: clamp(11px, 0.95vw, 13px);
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      color: var(--cardinal);
+    .kicker-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: clamp(10.5px, 0.85vw, 12px);
+      font-weight: 600;
+      letter-spacing: 0.10em;
       text-transform: uppercase;
-      margin-bottom: 5px;
+      color: var(--cardinal);
+      background: var(--cardinal-soft);
+      border: 1px solid var(--cardinal-bd);
+      padding: 4px 11px;
+      border-radius: 999px;
+      width: fit-content;
+      margin-bottom: 10px;
+    }
+    .kicker-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--cardinal);
     }
 
     h1 {
-      font-size: clamp(28px, 3.5vw, 46px);
+      font-size: clamp(30px, 3.6vw, 48px);
       font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--black);
-      line-height: 1.15;
+      letter-spacing: -0.025em;
+      color: var(--ink);
+      line-height: 1.14;
     }
 
+    .header-row {
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
     h2 {
-      font-size: clamp(20px, 2.1vw, 28px);
+      font-size: clamp(20px, 2.05vw, 27px);
       font-weight: 700;
-      color: var(--black);
-      line-height: 1.25;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--stone);
+      letter-spacing: -0.015em;
+      color: var(--ink);
+      line-height: 1.24;
     }
 
     .subtitle {
-      font-size: clamp(15px, 1.45vw, 20px);
-      color: var(--slate);
+      font-size: clamp(15px, 1.4vw, 19px);
+      color: var(--muted);
       margin-top: 10px;
+      font-weight: 400;
     }
 
-    .cover-rule { width: 72px; height: 4px; background: var(--cardinal); }
-
-    .cover-pills {
+    .cover-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 14px;
-      max-width: 92%;
+      margin-top: 10px;
+      max-width: 96%;
     }
-    .pill {
-      background: var(--sand);
-      padding: 13px 15px;
-      border-top: 3px solid var(--cardinal);
+    .cover-card {
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: var(--shadow-card);
     }
-    .pill.teal { border-top-color: var(--teal); }
-    .pill.dark { border-top-color: var(--black); }
-    .pill.pine { border-top-color: var(--pine); }
-    .pill-num { font-size: 11.5px; font-weight: 700; color: var(--slate); margin-bottom: 4px; }
-    .pill-txt { font-size: clamp(13px, 1.15vw, 15.5px); font-weight: 700; color: var(--black); }
+    .cover-card-num {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--cardinal);
+    }
+    .cover-card.ref .cover-card-num { color: var(--ref); }
+    .cover-card.innov .cover-card-num { color: var(--innov); }
+    .cover-card.dark .cover-card-num { color: var(--ink-2); }
+    .cover-card-title {
+      font-size: clamp(13.5px, 1.15vw, 15.5px);
+      font-weight: 600;
+      color: var(--ink);
+    }
 
     .body {
       flex: 1;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 12px 0 6px 0;
+      padding: 14px 0 8px 0;
       min-height: 0;
     }
 
-    .two-col {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      height: 100%;
-    }
-
-    .three-col {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+    /* Slide 2 Architecture Bento Flow */
+    .legend-bar {
+      display: flex;
+      align-items: center;
       gap: 18px;
+      margin-bottom: 12px;
     }
+    .legend-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 999px;
+    }
+    .legend-chip.ref { background: var(--ref-soft); color: var(--ref); border: 1px solid var(--ref-bd); }
+    .legend-chip.stitch { background: var(--stitch-soft); color: var(--stitch); border: 1px solid var(--stitch-bd); }
+    .legend-chip.innov { background: var(--innov-soft); color: var(--innov); border: 1px solid var(--innov-bd); }
+    .legend-swatch { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 
-    .panel {
-      background: var(--sand);
-      padding: 18px 20px;
-      border-top: 3px solid var(--cardinal);
+    .arch-grid {
+      display: grid;
+      grid-template-columns: 1fr 18px 1fr 18px 1fr 18px 1fr 18px 1fr;
+      align-items: stretch;
+      gap: 4px;
+    }
+    .arch-arrow {
       display: flex;
-      flex-direction: column;
+      align-items: center;
       justify-content: center;
-      gap: 11px;
+      color: #A1A1AA;
     }
-    .panel.teal { background: var(--teal-tint); border-top-color: var(--teal); }
-    .panel.pine { background: var(--pine-tint); border-top-color: var(--pine); }
-    .panel.dark { background: var(--sand); border-top-color: var(--black); }
-    .panel.white { background: #fff; border: 1px solid var(--stone); border-top: 3px solid var(--cardinal); }
-
-    .panel-title {
-      font-size: clamp(14.5px, 1.3vw, 17.5px);
-      font-weight: 700;
-      color: var(--cardinal);
-      margin-bottom: 2px;
-    }
-    .panel.teal .panel-title { color: var(--teal); }
-    .panel.pine .panel-title { color: var(--pine); }
-    .panel.dark .panel-title { color: var(--black); }
-
-    .item-list {
+    .arch-col {
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
       display: flex;
       flex-direction: column;
-      gap: 9px;
+      gap: 8px;
+      box-shadow: var(--shadow-card);
     }
-    .item-card {
-      background: #FFFFFF;
-      padding: 9px 13px;
-      border-left: 3px solid var(--cardinal);
+    .arch-head {
+      padding: 7px 10px;
+      border-radius: 8px;
+      font-size: clamp(12px, 1.02vw, 13.5px);
+      font-weight: 700;
+      color: #fff;
+      text-align: center;
+      background: var(--ink);
+    }
+    .arch-head.red { background: linear-gradient(135deg, #8C1515, #A62626); }
+    .arch-head.blue { background: linear-gradient(135deg, #214B70, #2B5B84); }
+    .arch-head.green { background: linear-gradient(135deg, #16594A, #1B6B58); }
+
+    .arch-box {
+      border-radius: 8px;
+      padding: 8px 9px;
       display: flex;
       flex-direction: column;
       gap: 3px;
     }
-    .panel.teal .item-card { border-left-color: var(--teal); }
-    .panel.pine .item-card { border-left-color: var(--pine); }
-    .panel.dark .item-card { border-left-color: var(--black); }
-    .item-card.teal { border-left-color: var(--teal); }
-    .item-card.pine { border-left-color: var(--pine); }
-    .item-card.dark { border-left-color: var(--black); }
+    .arch-box.ref { background: var(--ref-soft); border: 1px solid var(--ref-bd); }
+    .arch-box.stitch { background: var(--stitch-soft); border: 1px solid var(--stitch-bd); }
+    .arch-box.innov { background: var(--innov-soft); border: 1px solid var(--innov-bd); flex: 1; justify-content: center; }
 
-    .item-head {
-      font-size: clamp(12.5px, 1.1vw, 14.5px);
+    .arch-box-label {
+      font-size: 10.5px;
       font-weight: 700;
-      color: var(--black);
+      letter-spacing: 0.04em;
     }
-    .item-sub {
-      font-size: clamp(11.5px, 0.98vw, 13px);
-      color: var(--slate);
-      line-height: 1.4;
+    .arch-box.ref .arch-box-label { color: var(--ref); }
+    .arch-box.stitch .arch-box-label { color: var(--stitch); }
+    .arch-box.innov .arch-box-label { color: var(--innov); }
+    .arch-box-text {
+      font-size: clamp(11px, 0.92vw, 12.2px);
+      color: var(--ink);
+      line-height: 1.42;
+      font-weight: 500;
     }
 
-    .tag-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .tag {
-      font-size: 12px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 3px;
+    /* Clean Modern Table (Slide 3) */
+    .table-wrap {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
       background: #fff;
-      border: 1px solid var(--stone);
-      color: var(--black);
     }
-    .tag.red { color: var(--cardinal); border-color: var(--cardinal); background: var(--cardinal-tint); }
-    .tag.teal { color: var(--teal); border-color: var(--teal); background: var(--teal-tint); }
-    .tag.pine { color: var(--pine); border-color: var(--pine); background: var(--pine-tint); }
-
-    /* Reference table */
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: clamp(12px, 1.08vw, 14px);
+      font-size: clamp(11.8px, 1.02vw, 13.5px);
     }
     th {
-      background: var(--cardinal);
-      color: #fff;
-      text-align: left;
-      padding: 9px 12px;
+      background: #F4F5F7;
+      color: var(--ink-2);
       font-weight: 700;
+      text-align: left;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border-strong);
+      font-size: 12px;
+      letter-spacing: 0.03em;
     }
     td {
-      padding: 8px 12px;
-      border-bottom: 1px solid var(--stone);
-      color: var(--black);
+      padding: 9.5px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--ink-2);
     }
-    tr:nth-child(even) td { background: var(--sand); }
-    .venue {
-      display: inline-block;
-      font-weight: 700;
-      font-size: 12px;
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: #FAFAFB; }
+    td strong { color: var(--ink); font-weight: 600; }
+    .venue-badge {
+      display: inline-flex;
+      align-items: center;
+      font-weight: 600;
+      font-size: 11.5px;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: var(--cardinal-soft);
       color: var(--cardinal);
-      background: var(--cardinal-tint);
-      padding: 2px 8px;
-      border-radius: 3px;
+      border: 1px solid var(--cardinal-bd);
     }
-    .venue.teal { color: var(--teal); background: var(--teal-tint); }
-    .venue.dark { color: var(--black); background: #EAE8E1; }
+    .venue-badge.ref { background: var(--ref-soft); color: var(--ref); border-color: var(--ref-bd); }
+    .venue-badge.neutral { background: #F1F2F5; color: var(--ink-2); border-color: var(--border); }
+
+    /* Bento Panels & Cards */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      height: 100%;
+      align-items: stretch;
+    }
+    .three-col {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .bento {
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12px;
+      box-shadow: var(--shadow-card);
+    }
+    .bento.ref { background: linear-gradient(180deg, #F5F8FC 0%, #F8FAFC 100%); border-color: var(--ref-bd); }
+    .bento.stitch { background: linear-gradient(180deg, #FCF6F6 0%, #FAF8F8 100%); border-color: var(--stitch-bd); }
+    .bento.innov { background: linear-gradient(180deg, #F3FAF8 0%, #F7FBFA 100%); border-color: var(--innov-bd); }
+
+    .bento-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: clamp(14px, 1.25vw, 16.5px);
+      font-weight: 700;
+      color: var(--ink);
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .bento.ref .bento-title { color: var(--ref); }
+    .bento.stitch .bento-title { color: var(--stitch); }
+    .bento.innov .bento-title { color: var(--innov); }
+
+    .subcard-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+    .subcard {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
+    }
+    .subcard-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: clamp(12.5px, 1.08vw, 14px);
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .subcard-body {
+      font-size: clamp(11.5px, 0.96vw, 12.8px);
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .pill-mini {
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
+    .pill-mini.ref { background: var(--ref-soft); color: var(--ref); }
+    .pill-mini.stitch { background: var(--stitch-soft); color: var(--stitch); }
+    .pill-mini.innov { background: var(--innov-soft); color: var(--innov); }
+
+    /* Horizontal Step Flow (Slides 5, 6) */
+    .step-strip {
+      display: grid;
+      align-items: stretch;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .step-strip.cols-4 { grid-template-columns: 1fr 22px 1fr 22px 1fr 22px 1fr; }
+    .step-strip.cols-5 { grid-template-columns: 1fr 20px 1fr 20px 1fr 20px 1fr 20px 1fr; }
+
+    .step-node {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 13px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      box-shadow: var(--shadow-card);
+      position: relative;
+      overflow: hidden;
+    }
+    .step-node::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--ink);
+    }
+    .step-node.ref::before { background: var(--ref); }
+    .step-node.stitch::before { background: var(--stitch); }
+    .step-node.innov::before { background: var(--innov); }
+    .step-node.dark { background: #18181B; border-color: #18181B; }
+    .step-node.dark::before { background: var(--cardinal); }
+    .step-node.dark .step-title { color: #FFFFFF; }
+    .step-node.dark .step-desc { color: #D4D4D8; }
+
+    .step-title {
+      font-size: clamp(12px, 1.05vw, 13.5px);
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .step-node.ref .step-title { color: var(--ref); }
+    .step-node.stitch .step-title { color: var(--stitch); }
+    .step-node.innov .step-title { color: var(--innov); }
+    .step-desc {
+      font-size: clamp(11px, 0.92vw, 12px);
+      color: var(--muted);
+      line-height: 1.42;
+    }
+
+    /* Visual Diagram Frame (Slides 4, 8) */
+    .diagram-frame {
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      box-shadow: var(--shadow-card);
+    }
+
+    .mini-flow {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .mini-row {
+      display: grid;
+      grid-template-columns: 1fr 20px 1fr 20px 1fr;
+      align-items: center;
+      gap: 4px;
+    }
+    .mini-row.two {
+      grid-template-columns: 1fr 22px 1fr;
+    }
+    .mini-node {
+      border-radius: 8px;
+      padding: 8px 9px;
+      text-align: center;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+    }
+    .mini-node.solid-red { background: var(--cardinal); border-color: var(--cardinal); color: #fff; }
+    .mini-node.solid-green { background: var(--innov); border-color: var(--innov); color: #fff; }
+    .mini-node-t { font-size: 12px; font-weight: 700; line-height: 1.25; }
+    .mini-node-s { font-size: 10.5px; opacity: 0.82; margin-top: 2px; }
+    .mini-banner {
+      text-align: center;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 7px;
+      background: var(--ref-soft);
+      color: var(--ref);
+      border: 1px solid var(--ref-bd);
+    }
 
     svg { width: 100%; height: auto; display: block; }
 
@@ -262,42 +537,60 @@
       justify-content: space-between;
       align-items: center;
       padding-top: 8px;
-      border-top: 1px solid var(--stone);
-      font-size: 12px;
-      color: var(--slate);
+      border-top: 1px solid var(--border);
+      font-size: 11.5px;
+      color: var(--muted);
     }
-    .page-num { font-weight: 700; color: var(--cardinal); }
+    .page-num {
+      font-weight: 700;
+      color: var(--ink-2);
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      padding: 2px 9px;
+      border-radius: 999px;
+    }
 
+    /* Floating Glass Controls */
     .controls {
       margin-top: 14px;
       display: flex;
       align-items: center;
-      gap: 14px;
-      font-size: 13px;
-      color: var(--slate);
+      gap: 10px;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
     }
     .btn {
-      background: #FFFFFF;
-      border: 1px solid var(--stone);
-      color: var(--black);
-      padding: 6px 14px;
-      border-radius: 4px;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--ink-2);
+      padding: 5px 12px;
+      border-radius: 999px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
+      transition: all 0.15s ease;
     }
-    .btn:hover { border-color: var(--cardinal); color: var(--cardinal); }
-    .dots { display: flex; gap: 6px; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #CCCAC2; cursor: pointer; }
-    .dot.active { background: var(--cardinal); width: 20px; border-radius: 4px; }
+    .btn:hover { background: var(--cardinal-soft); color: var(--cardinal); }
+    .dots { display: flex; gap: 6px; padding: 0 4px; }
+    .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #D4D4D8; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .dot.active { background: var(--cardinal); width: 20px; border-radius: 999px; }
 
     body.overview .stage {
       width: 94vw; height: 86vh; aspect-ratio: auto;
       overflow-y: auto; padding: 24px;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
       gap: 20px;
-      background: #ECEBE6;
+      background: transparent;
       box-shadow: none;
       border: none;
     }
@@ -305,15 +598,17 @@
       display: flex !important;
       aspect-ratio: 16 / 9;
       background: #fff;
-      border: 1px solid var(--stone);
+      border: 1px solid var(--border);
+      border-radius: 12px;
       cursor: pointer;
+      box-shadow: var(--shadow-card);
     }
-    body.overview .slide:hover { outline: 3px solid var(--cardinal); }
+    body.overview .slide:hover { outline: 2.5px solid var(--cardinal); }
 
     @media print {
       body { background: #fff; height: auto; overflow: visible; display: block; }
       .controls { display: none; }
-      .stage { width: 100%; aspect-ratio: auto; box-shadow: none; border: none; }
+      .stage { width: 100%; aspect-ratio: auto; box-shadow: none; border: none; border-radius: 0; }
       .slide { display: flex !important; page-break-after: always; height: 100vh; }
     }
   </style>
@@ -325,269 +620,284 @@
   <!-- SLIDE 1: Cover -->
   <section class="slide cover active">
     <div>
-      <div class="kicker">METHODOLOGY ARCHITECTURE</div>
+      <div class="kicker-pill"><span class="kicker-dot"></span>METHODOLOGY ARCHITECTURE</div>
       <h1>店铺停留时长重建方法路线</h1>
       <div class="subtitle">总体技术路线 · 顶会参考模块 · 五大模块详细阐释</div>
     </div>
-    <div class="cover-rule"></div>
-    <div class="cover-pills">
-      <div class="pill"><div class="pill-num">01 – 02</div><div class="pill-txt">总体路线与参考文献</div></div>
-      <div class="pill dark"><div class="pill-num">MODULE 1</div><div class="pill-txt">检测与端点构建</div></div>
-      <div class="pill teal"><div class="pill-num">MODULE 2 – 3</div><div class="pill-txt">静态匹配与时序建模</div></div>
-      <div class="pill pine"><div class="pill-num">MODULE 4 – 5</div><div class="pill-txt">高召回、归并与筛选</div></div>
+    <div class="cover-grid">
+      <div class="cover-card">
+        <div class="cover-card-num">01 – 02 · OVERVIEW</div>
+        <div class="cover-card-title">总体路线与参考文献</div>
+      </div>
+      <div class="cover-card dark">
+        <div class="cover-card-num">MODULE 1</div>
+        <div class="cover-card-title">检测与端点构建</div>
+      </div>
+      <div class="cover-card ref">
+        <div class="cover-card-num">MODULE 2 – 3</div>
+        <div class="cover-card-title">静态匹配与时序建模</div>
+      </div>
+      <div class="cover-card innov">
+        <div class="cover-card-num">MODULE 4 – 5</div>
+        <div class="cover-card-title">高召回、归并与筛选</div>
+      </div>
     </div>
   </section>
 
-  <!-- SLIDE 2: 总体大流程图（保留） -->
+  <!-- SLIDE 2: 总体路线图 -->
   <section class="slide">
-    <div>
-      <div class="kicker">01 · ARCHITECTURE OVERVIEW</div>
+    <div class="header-row">
+      <div class="kicker-pill"><span class="kicker-dot"></span>01 · ARCHITECTURE OVERVIEW</div>
       <h2>总体路线图：参考模块 · 模块缝合 · 自主创新</h2>
     </div>
     <div class="body">
-      <svg viewBox="0 0 1120 390" xmlns="http://www.w3.org/2000/svg">
-        <rect x="10" y="6" width="14" height="14" rx="2" fill="#EFF6F8" stroke="#006B81"/>
-        <text x="32" y="18" font-size="12.5" font-weight="700" fill="#006B81">参考顶会模块</text>
-        <rect x="150" y="6" width="14" height="14" rx="2" fill="#FAF2F2" stroke="#8C1515"/>
-        <text x="172" y="18" font-size="12.5" font-weight="700" fill="#8C1515">多模块缝合</text>
-        <rect x="275" y="6" width="14" height="14" rx="2" fill="#F1F7F5" stroke="#175E54"/>
-        <text x="297" y="18" font-size="12.5" font-weight="700" fill="#175E54">自研方法创新</text>
+      <div class="legend-bar">
+        <span class="legend-chip ref"><span class="legend-swatch"></span>参考顶会模块</span>
+        <span class="legend-chip stitch"><span class="legend-swatch"></span>多模块缝合</span>
+        <span class="legend-chip innov"><span class="legend-swatch"></span>自研方法创新</span>
+      </div>
+      <div class="arch-grid">
+        <!-- Col 1 -->
+        <div class="arch-col">
+          <div class="arch-head">1. 检测与端点</div>
+          <div class="arch-box ref">
+            <div class="arch-box-label">参考模块</div>
+            <div class="arch-box-text">DEIM (CVPR 2025)<br/>CrowdDet (CVPR 2020)</div>
+          </div>
+          <div class="arch-box stitch">
+            <div class="arch-box-label">缝合</div>
+            <div class="arch-box-text">YOLO11-Pose + 窗口补检</div>
+          </div>
+          <div class="arch-box innov">
+            <div class="arch-box-label">自主创新</div>
+            <div class="arch-box-text">IoU/脚点/重叠连续门控<br/>跨断轨隔离保留<br/>躯干切分 + 脚踝偏移校准</div>
+          </div>
+        </div>
+        <div class="arch-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
 
-        <!-- Module 1 -->
-        <rect x="10" y="42" width="198" height="325" rx="6" fill="#F7F6F2" stroke="#E2E0DA"/>
-        <rect x="10" y="42" width="198" height="32" rx="4" fill="#2E2D29"/>
-        <text x="109" y="63" text-anchor="middle" font-size="13.5" font-weight="700" fill="#fff">1. 检测与端点构建</text>
-        <rect x="22" y="88" width="174" height="78" rx="4" fill="#EFF6F8" stroke="#006B81"/>
-        <text x="109" y="110" text-anchor="middle" font-size="12.5" font-weight="700" fill="#006B81">参考模块</text>
-        <text x="109" y="131" text-anchor="middle" font-size="12" fill="#2E2D29">DEIM (CVPR 2025)</text>
-        <text x="109" y="150" text-anchor="middle" font-size="12" fill="#2E2D29">CrowdDet (CVPR 2020)</text>
-        <rect x="22" y="178" width="174" height="58" rx="4" fill="#FAF2F2" stroke="#8C1515"/>
-        <text x="109" y="200" text-anchor="middle" font-size="12" font-weight="700" fill="#8C1515">缝合</text>
-        <text x="109" y="220" text-anchor="middle" font-size="11.5" fill="#2E2D29">YOLO11-Pose + 窗口补检</text>
-        <rect x="22" y="248" width="174" height="104" rx="4" fill="#F1F7F5" stroke="#175E54"/>
-        <text x="109" y="270" text-anchor="middle" font-size="12" font-weight="700" fill="#175E54">自主创新</text>
-        <text x="109" y="292" text-anchor="middle" font-size="11.5" fill="#2E2D29">IoU/脚点/重叠连续门控</text>
-        <text x="109" y="313" text-anchor="middle" font-size="11.5" fill="#2E2D29">跨断轨隔离保留</text>
-        <text x="109" y="334" text-anchor="middle" font-size="11.5" fill="#2E2D29">躯干切分+脚踝偏移校准</text>
+        <!-- Col 2 -->
+        <div class="arch-col">
+          <div class="arch-head red">2. 静态匹配 (A–E, K)</div>
+          <div class="arch-box ref">
+            <div class="arch-box-label">参考模块</div>
+            <div class="arch-box-text">COPE (CVPR 2026)<br/>SapiensID (CVPR 2025)</div>
+          </div>
+          <div class="arch-box stitch">
+            <div class="arch-box-label">缝合</div>
+            <div class="arch-box-text">缺 Sapiens 切 COPE + Lab 色</div>
+          </div>
+          <div class="arch-box innov">
+            <div class="arch-box-label">自主创新</div>
+            <div class="arch-box-text">无泄漏本地场景适配<br/>带拒绝边对数几率分配<br/>全局替代差距 + 同行辅助</div>
+          </div>
+        </div>
+        <div class="arch-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
 
-        <text x="222" y="205" text-anchor="middle" font-size="20" font-weight="700" fill="#5F6368">→</text>
+        <!-- Col 3 -->
+        <div class="arch-col">
+          <div class="arch-head blue">3. 时序建模 (F–J)</div>
+          <div class="arch-box ref">
+            <div class="arch-box-label">参考模块</div>
+            <div class="arch-box-text">GLTR (ICCV 2019)<br/>AP3D (ECCV 2020) · DTW</div>
+          </div>
+          <div class="arch-box stitch">
+            <div class="arch-box-label">缝合</div>
+            <div class="arch-box-text">0.65 时序 H + 0.35 静态 B</div>
+          </div>
+          <div class="arch-box innov">
+            <div class="arch-box-label">自主创新</div>
+            <div class="arch-box-text">冻结 COPE + 膨胀 TCN (1/2/4)<br/>整段反向增强对抗转身<br/>正反双向单调 DTW 对齐</div>
+          </div>
+        </div>
+        <div class="arch-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
 
-        <!-- Module 2 -->
-        <rect x="236" y="42" width="198" height="325" rx="6" fill="#F7F6F2" stroke="#E2E0DA"/>
-        <rect x="236" y="42" width="198" height="32" rx="4" fill="#8C1515"/>
-        <text x="335" y="63" text-anchor="middle" font-size="13.5" font-weight="700" fill="#fff">2. 静态外观匹配 (A–E, K)</text>
-        <rect x="248" y="88" width="174" height="78" rx="4" fill="#EFF6F8" stroke="#006B81"/>
-        <text x="335" y="110" text-anchor="middle" font-size="12.5" font-weight="700" fill="#006B81">参考模块</text>
-        <text x="335" y="131" text-anchor="middle" font-size="12" fill="#2E2D29">COPE (CVPR 2026)</text>
-        <text x="335" y="150" text-anchor="middle" font-size="12" fill="#2E2D29">SapiensID (CVPR 2025)</text>
-        <rect x="248" y="178" width="174" height="58" rx="4" fill="#FAF2F2" stroke="#8C1515"/>
-        <text x="335" y="200" text-anchor="middle" font-size="12" font-weight="700" fill="#8C1515">缝合</text>
-        <text x="335" y="220" text-anchor="middle" font-size="11.5" fill="#2E2D29">缺 Sapiens 切 COPE + Lab色</text>
-        <rect x="248" y="248" width="174" height="104" rx="4" fill="#F1F7F5" stroke="#175E54"/>
-        <text x="335" y="270" text-anchor="middle" font-size="12" font-weight="700" fill="#175E54">自主创新</text>
-        <text x="335" y="292" text-anchor="middle" font-size="11.5" fill="#2E2D29">无泄漏本地场景适配</text>
-        <text x="335" y="313" text-anchor="middle" font-size="11.5" fill="#2E2D29">带拒绝边对数几率分配</text>
-        <text x="335" y="334" text-anchor="middle" font-size="11.5" fill="#2E2D29">全局替代差距 + 同行辅助</text>
+        <!-- Col 4 -->
+        <div class="arch-col">
+          <div class="arch-head red">4. 高召回补入口 (R, N)</div>
+          <div class="arch-box ref">
+            <div class="arch-box-label">参考模块</div>
+            <div class="arch-box-text">k-reciprocal (CVPR 2017)<br/>HistGradientBoosting + LR</div>
+          </div>
+          <div class="arch-box stitch">
+            <div class="arch-box-label">缝合</div>
+            <div class="arch-box-text">11 路双向 Top-K 并集</div>
+          </div>
+          <div class="arch-box innov">
+            <div class="arch-box-label">自主创新</div>
+            <div class="arch-box-text">LR 只排送审序、不删候选<br/>单锚点补全 + 正例模板回捞<br/>不递归自训防漂移</div>
+          </div>
+        </div>
+        <div class="arch-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
 
-        <text x="448" y="205" text-anchor="middle" font-size="20" font-weight="700" fill="#5F6368">→</text>
-
-        <!-- Module 3 -->
-        <rect x="462" y="42" width="198" height="325" rx="6" fill="#F7F6F2" stroke="#E2E0DA"/>
-        <rect x="462" y="42" width="198" height="32" rx="4" fill="#006B81"/>
-        <text x="561" y="63" text-anchor="middle" font-size="13.5" font-weight="700" fill="#fff">3. 时序顺序建模 (F–J)</text>
-        <rect x="474" y="88" width="174" height="78" rx="4" fill="#EFF6F8" stroke="#006B81"/>
-        <text x="561" y="110" text-anchor="middle" font-size="12.5" font-weight="700" fill="#006B81">参考模块</text>
-        <text x="561" y="131" text-anchor="middle" font-size="12" fill="#2E2D29">GLTR (ICCV 2019)</text>
-        <text x="561" y="150" text-anchor="middle" font-size="12" fill="#2E2D29">AP3D (ECCV 2020) · DTW</text>
-        <rect x="474" y="178" width="174" height="58" rx="4" fill="#FAF2F2" stroke="#8C1515"/>
-        <text x="561" y="200" text-anchor="middle" font-size="12" font-weight="700" fill="#8C1515">缝合</text>
-        <text x="561" y="220" text-anchor="middle" font-size="11.5" fill="#2E2D29">0.65 时序 H + 0.35 静态 B</text>
-        <rect x="474" y="248" width="174" height="104" rx="4" fill="#F1F7F5" stroke="#175E54"/>
-        <text x="561" y="270" text-anchor="middle" font-size="12" font-weight="700" fill="#175E54">自主创新</text>
-        <text x="561" y="292" text-anchor="middle" font-size="11.5" fill="#2E2D29">冻结COPE+d=1,2,4膨胀TCN</text>
-        <text x="561" y="313" text-anchor="middle" font-size="11.5" fill="#2E2D29">整段反向增强对抗转身</text>
-        <text x="561" y="334" text-anchor="middle" font-size="11.5" fill="#2E2D29">正反双向单调 DTW 对齐</text>
-
-        <text x="674" y="205" text-anchor="middle" font-size="20" font-weight="700" fill="#5F6368">→</text>
-
-        <!-- Module 4 -->
-        <rect x="688" y="42" width="198" height="325" rx="6" fill="#F7F6F2" stroke="#E2E0DA"/>
-        <rect x="688" y="42" width="198" height="32" rx="4" fill="#8C1515"/>
-        <text x="787" y="63" text-anchor="middle" font-size="13.5" font-weight="700" fill="#fff">4. 高召回与补入口 (R, N)</text>
-        <rect x="700" y="88" width="174" height="78" rx="4" fill="#EFF6F8" stroke="#006B81"/>
-        <text x="787" y="110" text-anchor="middle" font-size="12.5" font-weight="700" fill="#006B81">参考模块</text>
-        <text x="787" y="131" text-anchor="middle" font-size="12" fill="#2E2D29">k-reciprocal (CVPR 2017)</text>
-        <text x="787" y="150" text-anchor="middle" font-size="12" fill="#2E2D29">HistGradientBoosting + LR</text>
-        <rect x="700" y="178" width="174" height="58" rx="4" fill="#FAF2F2" stroke="#8C1515"/>
-        <text x="787" y="200" text-anchor="middle" font-size="12" font-weight="700" fill="#8C1515">缝合</text>
-        <text x="787" y="220" text-anchor="middle" font-size="11.5" fill="#2E2D29">11 路双向 Top-K 并集</text>
-        <rect x="700" y="248" width="174" height="104" rx="4" fill="#F1F7F5" stroke="#175E54"/>
-        <text x="787" y="270" text-anchor="middle" font-size="12" font-weight="700" fill="#175E54">自主创新</text>
-        <text x="787" y="292" text-anchor="middle" font-size="11.5" fill="#2E2D29">LR 只排送审序、不删候选</text>
-        <text x="787" y="313" text-anchor="middle" font-size="11.5" fill="#2E2D29">单锚点补全 + 正例模板回捞</text>
-        <text x="787" y="334" text-anchor="middle" font-size="11.5" fill="#2E2D29">不递归自训防漂移</text>
-
-        <text x="900" y="205" text-anchor="middle" font-size="20" font-weight="700" fill="#5F6368">→</text>
-
-        <!-- Module 5 -->
-        <rect x="914" y="42" width="196" height="325" rx="6" fill="#F7F6F2" stroke="#E2E0DA"/>
-        <rect x="914" y="42" width="196" height="32" rx="4" fill="#175E54"/>
-        <text x="1012" y="63" text-anchor="middle" font-size="13.5" font-weight="700" fill="#fff">5. 归并、复核与筛选</text>
-        <rect x="926" y="88" width="172" height="78" rx="4" fill="#EFF6F8" stroke="#006B81"/>
-        <text x="1012" y="110" text-anchor="middle" font-size="12.5" font-weight="700" fill="#006B81">参考模块</text>
-        <text x="1012" y="131" text-anchor="middle" font-size="12" fill="#2E2D29">Bipartite Matching</text>
-        <text x="1012" y="150" text-anchor="middle" font-size="12" fill="#2E2D29">VLM Cross-Check (Grok)</text>
-        <rect x="926" y="178" width="172" height="58" rx="4" fill="#FAF2F2" stroke="#8C1515"/>
-        <text x="1012" y="200" text-anchor="middle" font-size="12" font-weight="700" fill="#8C1515">缝合</text>
-        <text x="1012" y="220" text-anchor="middle" font-size="11.5" fill="#2E2D29">Ixxxx_Oyyyy 主键去重+历史</text>
-        <rect x="926" y="248" width="172" height="104" rx="4" fill="#F1F7F5" stroke="#175E54"/>
-        <text x="1012" y="270" text-anchor="middle" font-size="12" font-weight="700" fill="#175E54">自主创新</text>
-        <text x="1012" y="292" text-anchor="middle" font-size="11.5" fill="#2E2D29">0/1/2 + 进店动作校验</text>
-        <text x="1012" y="313" text-anchor="middle" font-size="11.5" fill="#2E2D29">&lt;30s 二分图先占位后剔除</text>
-        <text x="1012" y="334" text-anchor="middle" font-size="11.5" fill="#2E2D29">一对一端点消歧出终表</text>
-      </svg>
+        <!-- Col 5 -->
+        <div class="arch-col">
+          <div class="arch-head green">5. 归并、复核与筛选</div>
+          <div class="arch-box ref">
+            <div class="arch-box-label">参考模块</div>
+            <div class="arch-box-text">Bipartite Matching<br/>VLM Cross-Check (Grok)</div>
+          </div>
+          <div class="arch-box stitch">
+            <div class="arch-box-label">缝合</div>
+            <div class="arch-box-text">Ixxxx_Oyyyy 主键去重 + 历史</div>
+          </div>
+          <div class="arch-box innov">
+            <div class="arch-box-label">自主创新</div>
+            <div class="arch-box-text">0/1/2 + 进店动作校验<br/>&lt;30s 二分图先占位后剔除<br/>一对一端点消歧出终表</div>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="footer"><span>店铺停留时长重建 · 方法架构</span><span class="page-num">2 / 8</span></div>
   </section>
 
-  <!-- SLIDE 3: 参考文献总表（保留） -->
+  <!-- SLIDE 3: 参考文献总表 -->
   <section class="slide">
-    <div>
-      <div class="kicker">02 · LITERATURE REFERENCES</div>
+    <div class="header-row">
+      <div class="kicker-pill"><span class="kicker-dot"></span>02 · LITERATURE REFERENCES</div>
       <h2>各模块参考方法与文献出处</h2>
     </div>
     <div class="body">
-      <table>
-        <thead>
-          <tr>
-            <th style="width: 15%;">所属环节</th>
-            <th style="width: 22%;">方法 / 模型名称</th>
-            <th style="width: 24%;">参考文献出处</th>
-            <th style="width: 39%;">在本流程中的具体作用</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><b>检测与姿态</b></td>
-            <td>DEIM (D-FINE)</td>
-            <td><span class="venue">CVPR 2025</span></td>
-            <td>稠密一对一匹配 DETR 检测器，用于局部窗口行人补检</td>
-          </tr>
-          <tr>
-            <td><b>拥挤检测</b></td>
-            <td>CrowdDet</td>
-            <td><span class="venue">CVPR 2020 (Oral)</span></td>
-            <td>One-Proposal-Multiple-Predictions (EMD + Set-NMS)，人群重叠补检</td>
-          </tr>
-          <tr>
-            <td><b>基础姿态</b></td>
-            <td>YOLO11-Pose</td>
-            <td><span class="venue dark">Ultralytics 2024</span></td>
-            <td>提取全身框与脚踝关键点，判定跨门线初始事件</td>
-          </tr>
-          <tr>
-            <td><b>遮挡 ReID</b></td>
-            <td>COPE</td>
-            <td><span class="venue">CVPR 2026</span></td>
-            <td>遮挡一致增强与提示引导表征，作主干及序列帧编码器</td>
-          </tr>
-          <tr>
-            <td><b>跨姿态 ReID</b></td>
-            <td>SapiensID</td>
-            <td><span class="venue">CVPR 2025</span></td>
-            <td>Retina Patch + 语义注意力头，提供跨尺度姿态特征</td>
-          </tr>
-          <tr>
-            <td><b>多尺度时序</b></td>
-            <td>GLTR</td>
-            <td><span class="venue teal">ICCV 2019</span></td>
-            <td>并行多尺度膨胀时间卷积设计参考（本文实现 d=1,2,4 残差 TCN）</td>
-          </tr>
-          <tr>
-            <td><b>帧间变化</b></td>
-            <td>AP3D</td>
-            <td><span class="venue teal">ECCV 2020 (Oral)</span></td>
-            <td>相邻帧外观对齐建模设计参考（结合相邻特征差与运动量）</td>
-          </tr>
-          <tr>
-            <td><b>检索与对齐</b></td>
-            <td>k-reciprocal / DTW</td>
-            <td><span class="venue dark">CVPR 2017 / TASSP</span></td>
-            <td>双向互惠重排序参考；单调动态时间规整对抗进出转身</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 15%;">所属环节</th>
+              <th style="width: 22%;">方法 / 模型名称</th>
+              <th style="width: 24%;">参考文献出处</th>
+              <th style="width: 39%;">在本流程中的具体作用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>检测与姿态</strong></td>
+              <td>DEIM (D-FINE)</td>
+              <td><span class="venue-badge">CVPR 2025</span></td>
+              <td>稠密一对一匹配 DETR 检测器，用于局部窗口行人补检</td>
+            </tr>
+            <tr>
+              <td><strong>拥挤检测</strong></td>
+              <td>CrowdDet</td>
+              <td><span class="venue-badge">CVPR 2020 (Oral)</span></td>
+              <td>One-Proposal-Multiple-Predictions (EMD + Set-NMS)，人群重叠补检</td>
+            </tr>
+            <tr>
+              <td><strong>基础姿态</strong></td>
+              <td>YOLO11-Pose</td>
+              <td><span class="venue-badge neutral">Ultralytics 2024</span></td>
+              <td>提取全身框与脚踝关键点，判定跨门线初始事件</td>
+            </tr>
+            <tr>
+              <td><strong>遮挡 ReID</strong></td>
+              <td>COPE</td>
+              <td><span class="venue-badge">CVPR 2026</span></td>
+              <td>遮挡一致增强与提示引导表征，作主干及序列帧编码器</td>
+            </tr>
+            <tr>
+              <td><strong>跨姿态 ReID</strong></td>
+              <td>SapiensID</td>
+              <td><span class="venue-badge">CVPR 2025</span></td>
+              <td>Retina Patch + 语义注意力头，提供跨尺度姿态特征</td>
+            </tr>
+            <tr>
+              <td><strong>多尺度时序</strong></td>
+              <td>GLTR</td>
+              <td><span class="venue-badge ref">ICCV 2019</span></td>
+              <td>并行多尺度膨胀时间卷积设计参考（本文实现 d=1,2,4 残差 TCN）</td>
+            </tr>
+            <tr>
+              <td><strong>帧间变化</strong></td>
+              <td>AP3D</td>
+              <td><span class="venue-badge ref">ECCV 2020 (Oral)</span></td>
+              <td>相邻帧外观对齐建模设计参考（结合相邻特征差与运动量）</td>
+            </tr>
+            <tr>
+              <td><strong>检索与对齐</strong></td>
+              <td>k-reciprocal / DTW</td>
+              <td><span class="venue-badge neutral">CVPR 2017 / TASSP</span></td>
+              <td>双向互惠重排序参考；单调动态时间规整对抗进出转身</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
     <div class="footer"><span>店铺停留时长重建 · 方法架构</span><span class="page-num">3 / 8</span></div>
   </section>
 
-  <!-- SLIDE 4: 模块 1 详解 — 检测与端点构建 -->
+  <!-- SLIDE 4: 模块 1 详解 -->
   <section class="slide">
-    <div>
-      <div class="kicker">MODULE 1 · DETECTION &amp; ENDPOINT CONSTRUCTION</div>
+    <div class="header-row">
+      <div class="kicker-pill"><span class="kicker-dot"></span>MODULE 1 · DETECTION &amp; ENDPOINT CONSTRUCTION</div>
       <h2>模块 1 · 检测与端点构建</h2>
     </div>
     <div class="body">
       <div class="two-col">
-        <div style="display:flex; flex-direction:column; justify-content:center;">
-          <svg viewBox="0 0 540 355" xmlns="http://www.w3.org/2000/svg">
-            <!-- Top: Multi-detector fusion -->
-            <rect x="10" y="10" width="516" height="62" rx="5" fill="#EFF6F8" stroke="#006B81" stroke-width="1.4"/>
-            <text x="268" y="32" text-anchor="middle" font-size="13" font-weight="700" fill="#006B81">三路检测缝合</text>
-            <text x="268" y="54" text-anchor="middle" font-size="12" fill="#2E2D29">YOLO11-Pose（关键点初筛） + DEIM (CVPR'25) + CrowdDet (CVPR'20)</text>
+        <div class="diagram-frame">
+          <svg viewBox="0 0 540 350" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.06"/>
+              </filter>
+            </defs>
+            <!-- Top detector stitch -->
+            <rect x="12" y="8" width="516" height="60" rx="10" fill="#F2F6FA" stroke="#2B5B84" stroke-opacity="0.25" filter="url(#soft)"/>
+            <text x="270" y="31" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2B5B84">三路检测缝合</text>
+            <text x="270" y="52" text-anchor="middle" font-size="12" fill="#3F3F46">YOLO11-Pose（关键点初筛） + DEIM (CVPR'25) + CrowdDet (CVPR'20)</text>
 
-            <text x="268" y="92" text-anchor="middle" font-size="16" font-weight="700" fill="#5F6368">↓</text>
+            <path d="M270 72 L270 90" stroke="#A1A1AA" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M265 85 L270 91 L275 85" fill="none" stroke="#A1A1AA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 
-            <!-- Middle: Anchor continuity extension -->
-            <text x="10" y="114" font-size="13.5" font-weight="700" fill="#8C1515">A. 局部锚点连续扩展（遇遮挡即断开）</text>
-            <rect x="10" y="128" width="76" height="52" rx="5" fill="#fff" stroke="#175E54" stroke-width="1.8"/>
-            <text x="48" y="159" text-anchor="middle" font-size="13" font-weight="700" fill="#175E54">t-2</text>
-            <text x="98" y="158" text-anchor="middle" font-size="13" fill="#175E54">↔</text>
-            <rect x="110" y="128" width="76" height="52" rx="5" fill="#fff" stroke="#175E54" stroke-width="1.8"/>
-            <text x="148" y="159" text-anchor="middle" font-size="13" font-weight="700" fill="#175E54">t-1</text>
-            <text x="198" y="158" text-anchor="middle" font-size="13" fill="#175E54">↔</text>
-            <rect x="210" y="128" width="84" height="52" rx="5" fill="#FAF2F2" stroke="#8C1515" stroke-width="2.2"/>
-            <text x="252" y="159" text-anchor="middle" font-size="13" font-weight="700" fill="#8C1515">t0 锚点</text>
-            <text x="306" y="158" text-anchor="middle" font-size="13" fill="#175E54">↔</text>
-            <rect x="318" y="128" width="76" height="52" rx="5" fill="#fff" stroke="#175E54" stroke-width="1.8"/>
-            <text x="356" y="159" text-anchor="middle" font-size="13" font-weight="700" fill="#175E54">t+1</text>
-            <text x="412" y="160" text-anchor="middle" font-size="17" font-weight="700" fill="#8C1515">×</text>
-            <rect x="430" y="128" width="96" height="52" rx="5" fill="#fff" stroke="#B26F16" stroke-width="1.8" stroke-dasharray="5,4"/>
-            <text x="478" y="159" text-anchor="middle" font-size="12.5" font-weight="700" fill="#B26F16">遮挡截断</text>
+            <!-- Section A -->
+            <text x="14" y="112" font-size="13" font-weight="700" fill="#9A2B2B">A. 局部锚点连续扩展（遇遮挡即断开）</text>
+            <rect x="14" y="124" width="76" height="50" rx="9" fill="#FFFFFF" stroke="#1B6B58" stroke-opacity="0.4" stroke-width="1.5" filter="url(#soft)"/>
+            <text x="52" y="154" text-anchor="middle" font-size="13" font-weight="700" fill="#1B6B58">t-2</text>
+            <path d="M94 149 L108 149" stroke="#1B6B58" stroke-width="1.6"/>
+            <rect x="112" y="124" width="76" height="50" rx="9" fill="#FFFFFF" stroke="#1B6B58" stroke-opacity="0.4" stroke-width="1.5" filter="url(#soft)"/>
+            <text x="150" y="154" text-anchor="middle" font-size="13" font-weight="700" fill="#1B6B58">t-1</text>
+            <path d="M192 149 L206 149" stroke="#1B6B58" stroke-width="1.6"/>
+            <rect x="210" y="124" width="84" height="50" rx="9" fill="#FAF2F2" stroke="#8C1515" stroke-width="2" filter="url(#soft)"/>
+            <text x="252" y="154" text-anchor="middle" font-size="13" font-weight="700" fill="#8C1515">t0 锚点</text>
+            <path d="M298 149 L312 149" stroke="#1B6B58" stroke-width="1.6"/>
+            <rect x="316" y="124" width="76" height="50" rx="9" fill="#FFFFFF" stroke="#1B6B58" stroke-opacity="0.4" stroke-width="1.5" filter="url(#soft)"/>
+            <text x="354" y="154" text-anchor="middle" font-size="13" font-weight="700" fill="#1B6B58">t+1</text>
+            <path d="M405 142 L417 156 M417 142 L405 156" stroke="#8C1515" stroke-width="2.2" stroke-linecap="round"/>
+            <rect x="430" y="124" width="96" height="50" rx="9" fill="#FEF9EC" stroke="#A16207" stroke-opacity="0.45" stroke-width="1.5" stroke-dasharray="4,3"/>
+            <text x="478" y="154" text-anchor="middle" font-size="12.5" font-weight="700" fill="#A16207">遮挡截断</text>
 
-            <rect x="10" y="192" width="516" height="28" rx="4" fill="#F7F6F2"/>
-            <text x="268" y="211" text-anchor="middle" font-size="11.8" font-weight="600" fill="#5F6368">IoU &gt; 0.5  ·  脚点位移 ≤ 0.35H  ·  Δt ≤ 0.25s  ·  重叠 &gt; 0.3 断开</text>
+            <rect x="14" y="186" width="512" height="28" rx="7" fill="#FFFFFF" stroke="rgba(24,24,27,0.08)"/>
+            <text x="270" y="204" text-anchor="middle" font-size="11.5" font-weight="600" fill="#52525B">IoU &gt; 0.5  ·  脚点位移 ≤ 0.35H  ·  Δt ≤ 0.25s  ·  重叠 &gt; 0.3 断开</text>
 
-            <!-- Bottom: Occluded entry calibration -->
-            <text x="10" y="248" font-size="13.5" font-weight="700" fill="#175E54">B. 遮挡入口恢复（脚部被挡、躯干连续）</text>
-            <rect x="10" y="264" width="148" height="58" rx="5" fill="#F1F7F5" stroke="#175E54" stroke-width="1.4"/>
-            <text x="84" y="288" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2E2D29">躯干连续切分</text>
-            <text x="84" y="308" text-anchor="middle" font-size="11.5" fill="#5F6368">置信度 + IoU 重切</text>
-            <text x="174" y="297" text-anchor="middle" font-size="17" font-weight="700" fill="#175E54">→</text>
-            <rect x="190" y="264" width="154" height="58" rx="5" fill="#F1F7F5" stroke="#175E54" stroke-width="1.4"/>
-            <text x="267" y="288" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2E2D29">脚踝–框底偏移</text>
-            <text x="267" y="308" text-anchor="middle" font-size="11.5" fill="#5F6368">可见帧局部量校准</text>
-            <text x="360" y="297" text-anchor="middle" font-size="17" font-weight="700" fill="#175E54">→</text>
-            <rect x="376" y="264" width="150" height="58" rx="5" fill="#F1F7F5" stroke="#175E54" stroke-width="1.4"/>
-            <text x="451" y="288" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2E2D29">推算过线区间</text>
-            <text x="451" y="308" text-anchor="middle" font-size="11.5" fill="#5F6368">区间 &gt;0.6s 标「约」</text>
+            <!-- Section B -->
+            <text x="14" y="242" font-size="13" font-weight="700" fill="#1B6B58">B. 遮挡入口恢复（脚部被挡、躯干连续）</text>
+            <rect x="14" y="256" width="146" height="62" rx="10" fill="#FFFFFF" stroke="#1B6B58" stroke-opacity="0.25" filter="url(#soft)"/>
+            <text x="87" y="282" text-anchor="middle" font-size="12.5" font-weight="700" fill="#18181B">躯干连续切分</text>
+            <text x="87" y="302" text-anchor="middle" font-size="11" fill="#71717A">置信度 + IoU 重切</text>
+            <path d="M164 287 L184 287" stroke="#1B6B58" stroke-width="1.8"/><path d="M179 282 L185 287 L179 292" fill="none" stroke="#1B6B58" stroke-width="1.8" stroke-linecap="round"/>
+
+            <rect x="188" y="256" width="156" height="62" rx="10" fill="#FFFFFF" stroke="#1B6B58" stroke-opacity="0.25" filter="url(#soft)"/>
+            <text x="266" y="282" text-anchor="middle" font-size="12.5" font-weight="700" fill="#18181B">脚踝–框底偏移</text>
+            <text x="266" y="302" text-anchor="middle" font-size="11" fill="#71717A">可见帧局部量校准</text>
+            <path d="M348 287 L368 287" stroke="#1B6B58" stroke-width="1.8"/><path d="M363 282 L369 287 L363 292" fill="none" stroke="#1B6B58" stroke-width="1.8" stroke-linecap="round"/>
+
+            <rect x="372" y="256" width="154" height="62" rx="10" fill="#F1F8F6" stroke="#1B6B58" stroke-opacity="0.35" filter="url(#soft)"/>
+            <text x="449" y="282" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1B6B58">推算过线区间</text>
+            <text x="449" y="302" text-anchor="middle" font-size="11" fill="#3F3F46">区间 &gt;0.6s 标「约」</text>
           </svg>
         </div>
 
-        <div class="panel dark">
-          <div class="panel-title">模块 1 细节拆解</div>
-          <div class="item-list">
-            <div class="item-card teal">
-              <div class="item-head">1. 多检测器互补（缝合）</div>
-              <div class="item-sub">YOLO11-Pose 判定过线脚点；在密集漏检窗口调用 DEIM (CVPR'25) 与 CrowdDet (CVPR'20) 补框与确认双侧状态。</div>
+        <div class="bento">
+          <div class="bento-title"><span>模块 1 细节拆解</span><span class="pill-mini innov">端点层</span></div>
+          <div class="subcard-list">
+            <div class="subcard">
+              <div class="subcard-head"><span>1. 多检测器互补</span><span class="pill-mini stitch">缝合</span></div>
+              <div class="subcard-body">YOLO11-Pose 判定过线脚点；在密集漏检窗口调用 DEIM (CVPR'25) 与 CrowdDet (CVPR'20) 补框与确认双侧状态。</div>
             </div>
-            <div class="item-card red">
-              <div class="item-head">2. 局部连续扩展门控（创新）</div>
-              <div class="item-sub">从锚点前后扩展 ≤6s；严格校验相邻 IoU、脚点位移与同帧重叠，跨断轨入口两段分开保留不强拼。</div>
+            <div class="subcard">
+              <div class="subcard-head"><span>2. 局部连续扩展门控</span><span class="pill-mini innov">创新</span></div>
+              <div class="subcard-body">从锚点前后扩展 ≤6s；严格校验相邻 IoU、脚点位移与同帧重叠，跨断轨入口两段分开保留不强拼。</div>
             </div>
-            <div class="item-card pine">
-              <div class="item-head">3. 脚踝偏移校准与 PTS 统一（创新）</div>
-              <div class="item-sub">利用同段可见脚踝估计框底偏移回推进店帧；全流程统一原视频 PTS + 设备时钟偏移。</div>
+            <div class="subcard">
+              <div class="subcard-head"><span>3. 脚踝偏移校准与 PTS 统一</span><span class="pill-mini innov">创新</span></div>
+              <div class="subcard-body">利用同段可见脚踝估计框底偏移回推进店帧；全流程统一原视频 PTS + 设备时钟偏移。</div>
             </div>
           </div>
         </div>
@@ -596,74 +906,68 @@
     <div class="footer"><span>店铺停留时长重建 · 方法架构</span><span class="page-num">4 / 8</span></div>
   </section>
 
-  <!-- SLIDE 5: 模块 2 详解 — 静态外观匹配 (A-E, K) -->
+  <!-- SLIDE 5: 模块 2 详解 -->
   <section class="slide">
-    <div>
-      <div class="kicker">MODULE 2 · STATIC APPEARANCE MATCHING</div>
+    <div class="header-row">
+      <div class="kicker-pill"><span class="kicker-dot"></span>MODULE 2 · STATIC APPEARANCE MATCHING</div>
       <h2>模块 2 · 静态外观匹配（A–E, K）</h2>
     </div>
     <div class="body">
-      <svg viewBox="0 0 1080 128" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 16px;">
-        <rect x="8" y="14" width="235" height="96" rx="5" fill="#EFF6F8" stroke="#006B81" stroke-width="1.5"/>
-        <text x="125" y="42" text-anchor="middle" font-size="13.5" font-weight="700" fill="#006B81">双主干表征 + Lab 部位色</text>
-        <text x="125" y="65" text-anchor="middle" font-size="12" fill="#2E2D29">SapiensID (CVPR'25) 主提</text>
-        <text x="125" y="85" text-anchor="middle" font-size="12" fill="#2E2D29">缺失切 COPE (CVPR'26) + Lab</text>
-
-        <text x="266" y="68" text-anchor="middle" font-size="20" font-weight="700" fill="#5F6368">→</text>
-
-        <rect x="290" y="14" width="235" height="96" rx="5" fill="#FAF2F2" stroke="#8C1515" stroke-width="1.5"/>
-        <text x="407" y="42" text-anchor="middle" font-size="13.5" font-weight="700" fill="#8C1515">多视图互比 + 本地校准</text>
-        <text x="407" y="65" text-anchor="middle" font-size="12" fill="#2E2D29">可比视角统计量（防平均稀释）</text>
-        <text x="407" y="85" text-anchor="middle" font-size="12" fill="#2E2D29">局部正样本 + 同帧负样本拟合</text>
-
-        <text x="548" y="68" text-anchor="middle" font-size="20" font-weight="700" fill="#5F6368">→</text>
-
-        <rect x="572" y="14" width="235" height="96" rx="5" fill="#F1F7F5" stroke="#175E54" stroke-width="1.5"/>
-        <text x="689" y="42" text-anchor="middle" font-size="13.5" font-weight="700" fill="#175E54">带拒绝边全局分配</text>
-        <text x="689" y="65" text-anchor="middle" font-size="12" fill="#2E2D29">双向前 20 并集 + 不配对边</text>
-        <text x="689" y="85" text-anchor="middle" font-size="12" fill="#2E2D29">最大化对数几率 + Margin 约束</text>
-
-        <text x="830" y="68" text-anchor="middle" font-size="20" font-weight="700" fill="#5F6368">→</text>
-
-        <rect x="854" y="14" width="218" height="96" rx="5" fill="#F7F6F2" stroke="#2E2D29" stroke-width="1.5"/>
-        <text x="963" y="42" text-anchor="middle" font-size="13.5" font-weight="700" fill="#2E2D29">A–E 分级输出 + K</text>
-        <text x="963" y="65" text-anchor="middle" font-size="12" fill="#2E2D29">0.90/0.15 → 0.75 → 0.50/0.01</text>
-        <text x="963" y="85" text-anchor="middle" font-size="12" fill="#2E2D29">+ 同行上下文辅助 (K)</text>
-      </svg>
+      <div class="step-strip cols-4">
+        <div class="step-node ref">
+          <div class="step-title">双主干表征 + Lab 部位色</div>
+          <div class="step-desc">SapiensID (CVPR'25) 主提<br/>缺失切 COPE (CVPR'26) + Lab</div>
+        </div>
+        <div class="arch-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
+        <div class="step-node stitch">
+          <div class="step-title">多视图互比 + 本地校准</div>
+          <div class="step-desc">可比视角统计量防稀释<br/>局部正样本 + 同帧负样本</div>
+        </div>
+        <div class="arch-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
+        <div class="step-node innov">
+          <div class="step-title">带拒绝边全局分配</div>
+          <div class="step-desc">双向前 20 并集 + 不配对边<br/>最大化对数几率 + Margin</div>
+        </div>
+        <div class="arch-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
+        <div class="step-node dark">
+          <div class="step-title">A–E 分级输出 + K</div>
+          <div class="step-desc">0.90/0.15 → 0.75 → 0.50/0.01<br/>+ 同行上下文辅助 (K)</div>
+        </div>
+      </div>
 
       <div class="two-col" style="height:auto;">
-        <div class="panel">
-          <div class="panel-title">特征与校准（A / B / C）</div>
-          <div class="item-list">
-            <div class="item-card red">
-              <div class="item-head">A · 多视角与 COPE 回退</div>
-              <div class="item-sub">取最多 3 组不重复清晰视图比对；缺失 Sapiens 时切独立校准 COPE。</div>
+        <div class="bento stitch">
+          <div class="bento-title"><span>特征与校准（A / B / C）</span><span class="pill-mini stitch">特征层</span></div>
+          <div class="subcard-list">
+            <div class="subcard">
+              <div class="subcard-head"><span>A · 多视角与 COPE 回退</span><span class="pill-mini ref">CVPR'25/26</span></div>
+              <div class="subcard-body">取最多 3 组不重复清晰视图比对；缺失 Sapiens 时切独立校准 COPE。</div>
             </div>
-            <div class="item-card red">
-              <div class="item-head">B · 上下身 Lab 部位颜色</div>
-              <div class="item-sub">补充上/下身中央区域 Lab 色彩分布直方图（无 SCHP 分割依赖）。</div>
+            <div class="subcard">
+              <div class="subcard-head"><span>B · 上下身 Lab 部位颜色</span><span class="pill-mini stitch">缝合</span></div>
+              <div class="subcard-body">补充上/下身中央区域 Lab 色彩分布直方图（无 SCHP 分割依赖）。</div>
             </div>
-            <div class="item-card red">
-              <div class="item-head">C · 无泄漏场景适配</div>
-              <div class="item-sub">以较长连续轨迹采样正例、同帧空间分离行人采样负例重新拟合分类器。</div>
+            <div class="subcard">
+              <div class="subcard-head"><span>C · 无泄漏场景适配</span><span class="pill-mini innov">创新</span></div>
+              <div class="subcard-body">以较长连续轨迹采样正例、同帧空间分离行人采样负例重新拟合分类器。</div>
             </div>
           </div>
         </div>
 
-        <div class="panel pine">
-          <div class="panel-title">全局分配与变体（D / E / K）</div>
-          <div class="item-list">
-            <div class="item-card">
-              <div class="item-head">带拒绝选项的二分图优化</div>
-              <div class="item-sub">放弃「双向互为第一」硬约束，保留双向前 20 并集求解全局最大对数几率。</div>
+        <div class="bento innov">
+          <div class="bento-title"><span>全局分配与变体（D / E / K）</span><span class="pill-mini innov">分配层</span></div>
+          <div class="subcard-list">
+            <div class="subcard">
+              <div class="subcard-head"><span>带拒绝选项的二分图优化</span><span class="pill-mini innov">创新</span></div>
+              <div class="subcard-body">放弃「双向互为第一」硬约束，保留双向前 20 并集求解全局最大对数几率。</div>
             </div>
-            <div class="item-card">
-              <div class="item-head">全局替代差距（Alternative Margin）</div>
-              <div class="item-sub">禁选当前边后重求解次优得分，D/E 阶梯放宽 (0.90/0.15 → 0.75/0.05 → 0.50/0.01)。</div>
+            <div class="subcard">
+              <div class="subcard-head"><span>全局替代差距（Alternative Margin）</span><span class="pill-mini innov">创新</span></div>
+              <div class="subcard-body">禁选当前边后重求解次优得分，D/E 阶梯放宽 (0.90/0.15 → 0.75/0.05 → 0.50/0.01)。</div>
             </div>
-            <div class="item-card">
-              <div class="item-head">K · 同行辅助与短时返回</div>
-              <div class="item-sub">引入同帧同行行人上下文辅助；短时返回仅由共享清晰连续帧支持。</div>
+            <div class="subcard">
+              <div class="subcard-head"><span>K · 同行辅助与短时返回</span><span class="pill-mini stitch">上下文</span></div>
+              <div class="subcard-body">引入同帧同行行人上下文辅助；短时返回仅由共享清晰连续帧支持。</div>
             </div>
           </div>
         </div>
@@ -672,87 +976,79 @@
     <div class="footer"><span>店铺停留时长重建 · 方法架构</span><span class="page-num">5 / 8</span></div>
   </section>
 
-  <!-- SLIDE 6: 模块 3 详解 — 时序顺序建模 (F-J) -->
+  <!-- SLIDE 6: 模块 3 详解 -->
   <section class="slide">
-    <div>
-      <div class="kicker">MODULE 3 · TEMPORAL SEQUENCE MODELING</div>
+    <div class="header-row">
+      <div class="kicker-pill"><span class="kicker-dot"></span>MODULE 3 · TEMPORAL SEQUENCE MODELING</div>
       <h2>模块 3 · 时序顺序建模（F–J）</h2>
     </div>
     <div class="body">
-      <svg viewBox="0 0 1080 142" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 18px;">
-        <rect x="6" y="14" width="178" height="106" rx="5" fill="#F7F6F2" stroke="#2E2D29" stroke-width="1.5"/>
-        <text x="95" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">1. 5Hz 有序切片</text>
-        <text x="95" y="66" text-anchor="middle" font-size="11.5" fill="#5F6368">≤6.4s 门口局部连续帧</text>
-        <text x="95" y="88" text-anchor="middle" font-size="11.5" fill="#5F6368">保存原始 PTS 与运动框</text>
-
-        <text x="200" y="72" text-anchor="middle" font-size="18" font-weight="700" fill="#5F6368">→</text>
-
-        <rect x="216" y="14" width="196" height="106" rx="5" fill="#EFF6F8" stroke="#006B81" stroke-width="1.5"/>
-        <text x="314" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="#006B81">2. 冻结 COPE + 帧差</text>
-        <text x="314" y="66" text-anchor="middle" font-size="11.5" fill="#2E2D29">COPE (CVPR'26) 帧向量</text>
-        <text x="314" y="88" text-anchor="middle" font-size="11.5" fill="#2E2D29">拼接 Δfeat / Δt / 框形运动</text>
-
-        <text x="428" y="72" text-anchor="middle" font-size="18" font-weight="700" fill="#5F6368">→</text>
-
-        <rect x="444" y="14" width="210" height="106" rx="5" fill="#FAF2F2" stroke="#8C1515" stroke-width="1.5"/>
-        <text x="549" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="#8C1515">3. 多尺度膨胀 TCN</text>
-        <text x="549" y="66" text-anchor="middle" font-size="11.5" fill="#2E2D29">d=1,2,4 残差卷积 (参考 GLTR)</text>
-        <text x="549" y="88" text-anchor="middle" font-size="11.5" fill="#2E2D29">缺失掩码 + 整段反向增强</text>
-
-        <text x="670" y="72" text-anchor="middle" font-size="18" font-weight="700" fill="#5F6368">→</text>
-
-        <rect x="686" y="14" width="186" height="106" rx="5" fill="#F1F7F5" stroke="#175E54" stroke-width="1.5"/>
-        <text x="779" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="#175E54">4. 双向单调 DTW</text>
-        <text x="779" y="66" text-anchor="middle" font-size="11.5" fill="#2E2D29">正/反双向对齐（对抗转身）</text>
-        <text x="779" y="88" text-anchor="middle" font-size="11.5" fill="#2E2D29">带重复帧步进惩罚项</text>
-
-        <text x="888" y="72" text-anchor="middle" font-size="18" font-weight="700" fill="#5F6368">→</text>
-
-        <rect x="904" y="14" width="170" height="106" rx="5" fill="#2E2D29"/>
-        <text x="989" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">5. 跨模态融合</text>
-        <text x="989" y="66" text-anchor="middle" font-size="11.5" fill="#E2E0DA">0.65 H + 0.35 静态 B</text>
-        <text x="989" y="88" text-anchor="middle" font-size="11.5" fill="#E2E0DA">无片段端静态回退</text>
-      </svg>
+      <div class="step-strip cols-5">
+        <div class="step-node">
+          <div class="step-title">1. 5Hz 有序切片</div>
+          <div class="step-desc">≤6.4s 门口连续帧<br/>保留原始 PTS 与框</div>
+        </div>
+        <div class="arch-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
+        <div class="step-node ref">
+          <div class="step-title">2. 冻结 COPE+帧差</div>
+          <div class="step-desc">COPE (CVPR'26) 向量<br/>拼 Δfeat / Δt / 运动</div>
+        </div>
+        <div class="arch-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
+        <div class="step-node stitch">
+          <div class="step-title">3. 膨胀残差 TCN</div>
+          <div class="step-desc">d=1,2,4 卷积 (GLTR)<br/>掩码 + 整段反向增强</div>
+        </div>
+        <div class="arch-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
+        <div class="step-node innov">
+          <div class="step-title">4. 双向单调 DTW</div>
+          <div class="step-desc">正/反双向序列对齐<br/>带重复帧步进惩罚</div>
+        </div>
+        <div class="arch-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
+        <div class="step-node dark">
+          <div class="step-title">5. 跨模态融合</div>
+          <div class="step-desc">0.65 H + 0.35 B<br/>缺片段平滑回退</div>
+        </div>
+      </div>
 
       <div class="three-col">
-        <div class="panel teal">
-          <div class="panel-title">参考文献映射</div>
-          <div class="item-list">
-            <div class="item-card">
-              <div class="item-head">GLTR (ICCV 2019)</div>
-              <div class="item-sub">借鉴多尺度并行膨胀卷积，构建 d=1,2,4 残差 1D TCN 头。</div>
+        <div class="bento ref">
+          <div class="bento-title"><span>参考文献映射</span><span class="pill-mini ref">参考</span></div>
+          <div class="subcard-list">
+            <div class="subcard">
+              <div class="subcard-head"><span>GLTR</span><span class="pill-mini ref">ICCV 2019</span></div>
+              <div class="subcard-body">借鉴多尺度并行膨胀卷积，构建 d=1,2,4 残差 1D TCN 头。</div>
             </div>
-            <div class="item-card">
-              <div class="item-head">AP3D (ECCV 2020)</div>
-              <div class="item-sub">借鉴相邻帧外观演化思想，输入相邻帧特征差与框形变化。</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-title">自研时序机制</div>
-          <div class="item-list">
-            <div class="item-card red">
-              <div class="item-head">连续片段非重叠拆分监督</div>
-              <div class="item-sub">同轨前后半段作正样本，同帧分离行人作负样本，反向增强训练。</div>
-            </div>
-            <div class="item-card red">
-              <div class="item-head">正反双向 + 半片段推理</div>
-              <div class="item-sub">保留正向/整段反向与首尾状态聚合，不做乱序全局平均池化。</div>
+            <div class="subcard">
+              <div class="subcard-head"><span>AP3D</span><span class="pill-mini ref">ECCV 2020</span></div>
+              <div class="subcard-body">借鉴相邻帧外观演化思想，输入相邻帧特征差与框形变化。</div>
             </div>
           </div>
         </div>
 
-        <div class="panel pine">
-          <div class="panel-title">F–J 五方案分工</div>
-          <div class="item-list">
-            <div class="item-card">
-              <div class="item-head">F（对照）/ G（TCN）/ H（联合）</div>
-              <div class="item-sub">F 用同批连续帧做静态对照；G 单用 TCN+部位；H 融合静态+TCN+DTW。</div>
+        <div class="bento stitch">
+          <div class="bento-title"><span>自研时序机制</span><span class="pill-mini innov">创新</span></div>
+          <div class="subcard-list">
+            <div class="subcard">
+              <div class="subcard-head"><span>连续片段非重叠拆分监督</span></div>
+              <div class="subcard-body">同轨前后半段作正样本，同帧分离行人作负样本，反向增强训练。</div>
             </div>
-            <div class="item-card">
-              <div class="item-head">I / J（新旧对数几率融合）</div>
-              <div class="item-sub">0.65 H + 0.35 B 融合；I 阈值 0.75/0.05，J 放宽至 0.50/0.01。</div>
+            <div class="subcard">
+              <div class="subcard-head"><span>正反双向 + 半片段推理</span></div>
+              <div class="subcard-body">保留正向/整段反向与首尾状态聚合，不做乱序全局平均池化。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bento innov">
+          <div class="bento-title"><span>F–J 五方案分工</span><span class="pill-mini stitch">消融</span></div>
+          <div class="subcard-list">
+            <div class="subcard">
+              <div class="subcard-head"><span>F (对照) / G (TCN) / H (联合)</span></div>
+              <div class="subcard-body">F 用同批连续帧做静态对照；G 单用 TCN+部位；H 融合静态+TCN+DTW。</div>
+            </div>
+            <div class="subcard">
+              <div class="subcard-head"><span>I / J (新旧对数几率融合)</span></div>
+              <div class="subcard-body">0.65 H + 0.35 B 融合；I 阈值 0.75/0.05，J 放宽至 0.50/0.01。</div>
             </div>
           </div>
         </div>
@@ -761,70 +1057,81 @@
     <div class="footer"><span>店铺停留时长重建 · 方法架构</span><span class="page-num">6 / 8</span></div>
   </section>
 
-  <!-- SLIDE 7: 模块 4 详解 — 高召回与补入口 (R, N) -->
+  <!-- SLIDE 7: 模块 4 详解 -->
   <section class="slide">
-    <div>
-      <div class="kicker">MODULE 4 · HIGH-RECALL AGGREGATION &amp; MINING</div>
+    <div class="header-row">
+      <div class="kicker-pill"><span class="kicker-dot"></span>MODULE 4 · HIGH-RECALL AGGREGATION &amp; MINING</div>
       <h2>模块 4 · 高召回汇总（R）与反馈补入口（N）</h2>
     </div>
     <div class="body">
       <div class="two-col">
-        <div class="panel">
-          <div class="panel-title">R · 11 通道双向高召回检索</div>
-          <svg viewBox="0 0 460 112" xmlns="http://www.w3.org/2000/svg">
-            <rect x="4" y="10" width="128" height="62" rx="5" fill="#fff" stroke="#8C1515" stroke-width="1.5"/>
-            <text x="68" y="36" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2E2D29">11 路异构通道</text>
-            <text x="68" y="56" text-anchor="middle" font-size="10.2" fill="#5F6368">A–C · F–I · COPE · DTW</text>
-            <text x="148" y="46" text-anchor="middle" font-size="18" font-weight="700" fill="#8C1515">→</text>
-            <rect x="164" y="10" width="132" height="62" rx="5" fill="#fff" stroke="#8C1515" stroke-width="1.5"/>
-            <text x="230" y="36" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2E2D29">双向 Top-K 并集</text>
-            <text x="230" y="56" text-anchor="middle" font-size="11" fill="#5F6368">入口→出 ∪ 出口→入</text>
-            <text x="312" y="46" text-anchor="middle" font-size="18" font-weight="700" fill="#8C1515">→</text>
-            <rect x="328" y="10" width="128" height="62" rx="5" fill="#8C1515"/>
-            <text x="392" y="36" text-anchor="middle" font-size="12.5" font-weight="700" fill="#fff">LR 优先级排序</text>
-            <text x="392" y="56" text-anchor="middle" font-size="11" fill="#FADADA">只排先后 · 不删候选</text>
-            <rect x="4" y="84" width="452" height="24" rx="4" fill="#fff" stroke="#E2E0DA"/>
-            <text x="230" y="100" text-anchor="middle" font-size="11.5" font-weight="600" fill="#8C1515">参考 k-reciprocal (CVPR'17) 双向互惠思想 · 分级输出 Top-3 / 10 / 30 / 全集</text>
-          </svg>
-          <div class="item-list">
-            <div class="item-card red">
-              <div class="item-head">单锚点补全低质量端点</div>
-              <div class="item-sub">缺连续多帧的端点取过线单帧人像与上下文入池，显式标示未连续验证。</div>
+        <div class="bento stitch">
+          <div class="bento-title"><span>R · 11 通道双向高召回检索</span><span class="pill-mini stitch">高召回</span></div>
+          <div class="mini-flow">
+            <div class="mini-row">
+              <div class="mini-node">
+                <div class="mini-node-t">11 路异构通道</div>
+                <div class="mini-node-s">A–C · F–I · COPE · DTW</div>
+              </div>
+              <div class="arch-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
+              <div class="mini-node">
+                <div class="mini-node-t">双向 Top-K 并集</div>
+                <div class="mini-node-s">入口→出 ∪ 出口→入</div>
+              </div>
+              <div class="arch-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
+              <div class="mini-node solid-red">
+                <div class="mini-node-t">LR 优先级排序</div>
+                <div class="mini-node-s">只排先后 · 不删候选</div>
+              </div>
             </div>
-            <div class="item-card red">
-              <div class="item-head">无硬截断 + 时间/同帧约束</div>
-              <div class="item-sub">取消概率硬阈值与双向第一；仅保留时间先后与同帧空间分离约束。</div>
+            <div class="mini-banner">参考 k-reciprocal (CVPR'17) 双向互惠 · 分级交付 Top-3 / 10 / 30 / 全集</div>
+          </div>
+          <div class="subcard-list">
+            <div class="subcard">
+              <div class="subcard-head"><span>单锚点补全低质量端点</span><span class="pill-mini innov">创新</span></div>
+              <div class="subcard-body">缺连续多帧的端点取过线单帧人像与上下文入池，显式标示未连续验证。</div>
+            </div>
+            <div class="subcard">
+              <div class="subcard-head"><span>无硬截断 + 时间/同帧约束</span><span class="pill-mini innov">创新</span></div>
+              <div class="subcard-body">取消概率硬阈值与双向第一；仅保留时间先后与同帧空间分离约束。</div>
             </div>
           </div>
         </div>
 
-        <div class="panel pine">
-          <div class="panel-title">N · 反馈双模型挖掘与遮挡补入口</div>
-          <svg viewBox="0 0 460 112" xmlns="http://www.w3.org/2000/svg">
-            <rect x="4" y="10" width="196" height="44" rx="5" fill="#fff" stroke="#175E54" stroke-width="1.5"/>
-            <text x="102" y="29" text-anchor="middle" font-size="12" font-weight="700" fill="#2E2D29">LR + HGB 反馈双模型</text>
-            <text x="102" y="45" text-anchor="middle" font-size="10.8" fill="#5F6368">无分歧反馈训练（不递归自训）</text>
-            <text x="220" y="37" text-anchor="middle" font-size="17" font-weight="700" fill="#175E54">→</text>
-            <rect x="240" y="10" width="216" height="44" rx="5" fill="#fff" stroke="#175E54" stroke-width="1.5"/>
-            <text x="348" y="29" text-anchor="middle" font-size="12" font-weight="700" fill="#2E2D29">已判 1 多视角模板回捞</text>
-            <text x="348" y="45" text-anchor="middle" font-size="10.8" fill="#5F6368">排除已判负与重叠独立到访</text>
-
-            <rect x="4" y="64" width="196" height="44" rx="5" fill="#fff" stroke="#006B81" stroke-width="1.5"/>
-            <text x="102" y="83" text-anchor="middle" font-size="12" font-weight="700" fill="#2E2D29">全事件姿态重挖入口</text>
-            <text x="102" y="99" text-anchor="middle" font-size="10.8" fill="#5F6368">双脚踝连续 / 躯干+框底偏移</text>
-            <text x="220" y="91" text-anchor="middle" font-size="17" font-weight="700" fill="#006B81">→</text>
-            <rect x="240" y="64" width="216" height="44" rx="5" fill="#175E54"/>
-            <text x="348" y="83" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">达标出口完备导出</text>
-            <text x="348" y="99" text-anchor="middle" font-size="10.8" fill="#DCEEE9">按外观门槛全量保留（不截断）</text>
-          </svg>
-          <div class="item-list">
-            <div class="item-card">
-              <div class="item-head">双模型集成 + 特征复用</div>
-              <div class="item-sub">复用 COPE / Sapiens 与时序特征，拟合正则化 LR 与浅层 HistGradientBoosting。</div>
+        <div class="bento innov">
+          <div class="bento-title"><span>N · 反馈双模型挖掘与遮挡补入口</span><span class="pill-mini innov">反馈补全</span></div>
+          <div class="mini-flow">
+            <div class="mini-row two">
+              <div class="mini-node">
+                <div class="mini-node-t">LR + HGB 反馈双模型</div>
+                <div class="mini-node-s">无分歧反馈训练（不递归自训）</div>
+              </div>
+              <div class="arch-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
+              <div class="mini-node">
+                <div class="mini-node-t">已判 1 多视角模板回捞</div>
+                <div class="mini-node-s">排除已判负与重叠独立到访</div>
+              </div>
             </div>
-            <div class="item-card">
-              <div class="item-head">按原视频 PTS 渲染新入口片段</div>
-              <div class="item-sub">不同片段不硬拼接，保留脚点来源标记与短停留竞争配对。</div>
+            <div class="mini-row two">
+              <div class="mini-node">
+                <div class="mini-node-t">全事件姿态重挖入口</div>
+                <div class="mini-node-s">双脚踝连续 / 躯干+框底偏移</div>
+              </div>
+              <div class="arch-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
+              <div class="mini-node solid-green">
+                <div class="mini-node-t">达标出口完备导出</div>
+                <div class="mini-node-s">按外观门槛全量保留（不截断）</div>
+              </div>
+            </div>
+          </div>
+          <div class="subcard-list">
+            <div class="subcard">
+              <div class="subcard-head"><span>双模型集成 + 特征复用</span><span class="pill-mini stitch">缝合</span></div>
+              <div class="subcard-body">复用 COPE / Sapiens 与时序特征，拟合正则化 LR 与浅层 HistGradientBoosting。</div>
+            </div>
+            <div class="subcard">
+              <div class="subcard-head"><span>按原视频 PTS 渲染新入口片段</span><span class="pill-mini innov">创新</span></div>
+              <div class="subcard-body">不同片段不硬拼接，保留脚点来源标记与短停留竞争配对。</div>
             </div>
           </div>
         </div>
@@ -833,67 +1140,78 @@
     <div class="footer"><span>店铺停留时长重建 · 方法架构</span><span class="page-num">7 / 8</span></div>
   </section>
 
-  <!-- SLIDE 8: 模块 5 详解 — 归并封装、交叉复核与筛选 -->
+  <!-- SLIDE 8: 模块 5 详解 -->
   <section class="slide">
-    <div>
-      <div class="kicker">MODULE 5 · UNIFICATION, VERIFICATION &amp; FILTERING</div>
+    <div class="header-row">
+      <div class="kicker-pill"><span class="kicker-dot"></span>MODULE 5 · UNIFICATION, VERIFICATION &amp; FILTERING</div>
       <h2>模块 5 · 归并封装、交叉复核与筛选</h2>
     </div>
     <div class="body">
       <div class="two-col">
-        <div style="display:flex; flex-direction:column; justify-content:center;">
-          <svg viewBox="0 0 520 355" xmlns="http://www.w3.org/2000/svg">
-            <!-- Top unification -->
-            <rect x="12" y="8" width="496" height="58" rx="5" fill="#F7F6F2" stroke="#2E2D29" stroke-width="1.4"/>
-            <text x="260" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">统一归并：Ixxxx_Oyyyy 主键去重</text>
-            <text x="260" y="50" text-anchor="middle" font-size="11.5" fill="#5F6368">合并 A–K / R / N / 历史 · 暴露竞争计数 · 端点共享 HTML / XLSX / JSONL</text>
+        <div class="diagram-frame">
+          <svg viewBox="0 0 520 350" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="120%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.05"/>
+              </filter>
+            </defs>
+            <rect x="12" y="6" width="496" height="54" rx="10" fill="#FFFFFF" stroke="rgba(24,24,27,0.12)" filter="url(#cardShadow)"/>
+            <text x="260" y="27" text-anchor="middle" font-size="13" font-weight="700" fill="#18181B">统一归并：Ixxxx_Oyyyy 主键去重</text>
+            <text x="260" y="46" text-anchor="middle" font-size="11.2" fill="#71717A">合并 A–K / R / N / 历史 · 暴露竞争计数 · 端点共享 HTML / XLSX / JSONL</text>
 
-            <text x="260" y="84" text-anchor="middle" font-size="15" font-weight="700" fill="#5F6368">↓  历史 × Grok 视觉大模型交叉复核（0 / 1 / 2）</text>
+            <path d="M260 63 L260 80" stroke="#A1A1AA" stroke-width="1.6"/>
+            <rect x="115" y="76" width="290" height="24" rx="12" fill="#F2F6FA" stroke="rgba(43,91,132,0.22)"/>
+            <text x="260" y="92" text-anchor="middle" font-size="11.5" font-weight="700" fill="#2B5B84">历史 × Grok 视觉大模型交叉复核（0 / 1 / 2）</text>
 
-            <!-- Bipartite disambiguation -->
-            <rect x="12" y="98" width="496" height="248" rx="6" fill="#F1F7F5" stroke="#175E54" stroke-width="1.3"/>
-            <text x="260" y="122" text-anchor="middle" font-size="13.5" font-weight="700" fill="#175E54">二分图端点消歧与短停留占位机制</text>
+            <rect x="12" y="110" width="496" height="232" rx="12" fill="#F1F8F6" stroke="rgba(27,107,88,0.22)"/>
+            <text x="260" y="134" text-anchor="middle" font-size="13" font-weight="700" fill="#1B6B58">二分图端点消歧与短停留占位机制</text>
 
-            <rect x="32" y="148" width="90" height="40" rx="5" fill="#fff" stroke="#2E2D29" stroke-width="1.4"/>
-            <text x="77" y="173" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">入口 A</text>
-            <rect x="398" y="148" width="90" height="40" rx="5" fill="#fff" stroke="#2E2D29" stroke-width="1.4"/>
-            <text x="443" y="173" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">出口 1</text>
-            <line x1="126" y1="168" x2="392" y2="168" stroke="#175E54" stroke-width="3.2"/>
-            <text x="260" y="158" text-anchor="middle" font-size="11.8" font-weight="700" fill="#175E54">双确认唯一边（≥30s → 保留）</text>
+            <!-- Row 1 -->
+            <rect x="30" y="152" width="88" height="40" rx="8" fill="#FFFFFF" stroke="rgba(24,24,27,0.14)" filter="url(#cardShadow)"/>
+            <text x="74" y="177" text-anchor="middle" font-size="12.5" font-weight="700" fill="#18181B">入口 A</text>
+            <rect x="402" y="152" width="88" height="40" rx="8" fill="#FFFFFF" stroke="rgba(24,24,27,0.14)" filter="url(#cardShadow)"/>
+            <text x="446" y="177" text-anchor="middle" font-size="12.5" font-weight="700" fill="#18181B">出口 1</text>
+            <path d="M122 172 L396 172" stroke="#1B6B58" stroke-width="2.8" stroke-linecap="round"/>
+            <rect x="172" y="159" width="176" height="22" rx="11" fill="#FFFFFF" stroke="rgba(27,107,88,0.3)"/>
+            <text x="260" y="174" text-anchor="middle" font-size="11.2" font-weight="700" fill="#1B6B58">双确认唯一边（≥30s → 保留）</text>
 
-            <rect x="32" y="214" width="90" height="40" rx="5" fill="#fff" stroke="#2E2D29" stroke-width="1.4"/>
-            <text x="77" y="239" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">入口 B</text>
-            <rect x="398" y="214" width="90" height="40" rx="5" fill="#fff" stroke="#2E2D29" stroke-width="1.4"/>
-            <text x="443" y="239" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">出口 2</text>
-            <line x1="126" y1="234" x2="392" y2="234" stroke="#B26F16" stroke-width="3.0"/>
-            <text x="260" y="224" text-anchor="middle" font-size="11.8" font-weight="700" fill="#B26F16">短停留 (&lt;30s)：先占住端口，终表剔除</text>
+            <!-- Row 2 + blocked cross -->
+            <path d="M122 246 C220 246, 290 296, 396 296" fill="none" stroke="#D4D4D8" stroke-width="1.8" stroke-dasharray="5,4"/>
+            <path d="M122 292 C220 292, 290 242, 396 242" fill="none" stroke="rgba(140,21,21,0.45)" stroke-width="1.6" stroke-dasharray="4,4"/>
 
-            <line x1="126" y1="246" x2="392" y2="292" stroke="#BDBBB3" stroke-width="1.8" stroke-dasharray="5,4"/>
+            <rect x="30" y="216" width="88" height="40" rx="8" fill="#FFFFFF" stroke="rgba(24,24,27,0.14)" filter="url(#cardShadow)"/>
+            <text x="74" y="241" text-anchor="middle" font-size="12.5" font-weight="700" fill="#18181B">入口 B</text>
+            <rect x="402" y="216" width="88" height="40" rx="8" fill="#FFFFFF" stroke="rgba(24,24,27,0.14)" filter="url(#cardShadow)"/>
+            <text x="446" y="241" text-anchor="middle" font-size="12.5" font-weight="700" fill="#18181B">出口 2</text>
+            <path d="M122 236 L396 236" stroke="#A16207" stroke-width="2.8" stroke-linecap="round"/>
+            <rect x="150" y="223" width="220" height="22" rx="11" fill="#FEF9EC" stroke="rgba(161,98,7,0.35)"/>
+            <text x="260" y="238" text-anchor="middle" font-size="11.2" font-weight="700" fill="#A16207">短停留 (&lt;30s)：先占住端口，终表剔除</text>
 
-            <rect x="32" y="280" width="90" height="40" rx="5" fill="#fff" stroke="#2E2D29" stroke-width="1.4"/>
-            <text x="77" y="305" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">入口 C</text>
-            <rect x="398" y="280" width="90" height="40" rx="5" fill="#fff" stroke="#2E2D29" stroke-width="1.4"/>
-            <text x="443" y="305" text-anchor="middle" font-size="13" font-weight="700" fill="#2E2D29">出口 3</text>
-            <line x1="126" y1="300" x2="392" y2="300" stroke="#8C1515" stroke-width="3.0"/>
-            <line x1="126" y1="292" x2="392" y2="246" stroke="#8C1515" stroke-width="1.6" stroke-dasharray="4,4"/>
-            <text x="260" y="328" text-anchor="middle" font-size="11.8" font-weight="700" fill="#8C1515">一对多冲突簇：按置信层级唯一择一</text>
+            <!-- Row 3 -->
+            <rect x="30" y="280" width="88" height="40" rx="8" fill="#FFFFFF" stroke="rgba(24,24,27,0.14)" filter="url(#cardShadow)"/>
+            <text x="74" y="305" text-anchor="middle" font-size="12.5" font-weight="700" fill="#18181B">入口 C</text>
+            <rect x="402" y="280" width="88" height="40" rx="8" fill="#FFFFFF" stroke="rgba(24,24,27,0.14)" filter="url(#cardShadow)"/>
+            <text x="446" y="305" text-anchor="middle" font-size="12.5" font-weight="700" fill="#18181B">出口 3</text>
+            <path d="M122 300 L396 300" stroke="#8C1515" stroke-width="2.8" stroke-linecap="round"/>
+            <rect x="160" y="311" width="200" height="22" rx="11" fill="#FAF2F2" stroke="rgba(140,21,21,0.3)"/>
+            <text x="260" y="326" text-anchor="middle" font-size="11.2" font-weight="700" fill="#8C1515">一对多冲突簇：按置信层级唯一择一</text>
           </svg>
         </div>
 
-        <div class="panel pine">
-          <div class="panel-title">模块 5 细节拆解</div>
-          <div class="item-list">
-            <div class="item-card dark">
-              <div class="item-head">1. 主键去重与证据共享（缝合）</div>
-              <div class="item-sub">以 Ixxxx_Oyyyy 合并所有方法行并保留来源血缘；按端点共享图片/视频，模型任务屏蔽排序分。</div>
+        <div class="bento innov">
+          <div class="bento-title"><span>模块 5 细节拆解</span><span class="pill-mini innov">筛选层</span></div>
+          <div class="subcard-list">
+            <div class="subcard">
+              <div class="subcard-head"><span>1. 主键去重与证据共享</span><span class="pill-mini stitch">缝合</span></div>
+              <div class="subcard-body">以 Ixxxx_Oyyyy 合并所有方法行并保留来源血缘；按端点共享图片/视频，模型任务屏蔽排序分。</div>
             </div>
-            <div class="item-card">
-              <div class="item-head">2. 三值交叉复核协议（创新）</div>
-              <div class="item-sub">0 异人 / 1 同人 / 2 存疑（不作负例），新入口加填「进店动作成立」；跨轮分歧显式保留，结合 Grok 全量核对。</div>
+            <div class="subcard">
+              <div class="subcard-head"><span>2. 三值交叉复核协议</span><span class="pill-mini innov">创新</span></div>
+              <div class="subcard-body">0 异人 / 1 同人 / 2 存疑（不作负例），新入口加填「进店动作成立」；跨轮分歧显式保留，结合 Grok 全量核对。</div>
             </div>
-            <div class="item-card red">
-              <div class="item-head">3. 短停留占位 + 一对一消歧导出（创新）</div>
-              <div class="item-sub">&lt;30s 先占位防错配后剔除；每端点至多归属 1 次到访，按编号回填导出三列终表（进入 / 出店 / 停留时间）。</div>
+            <div class="subcard">
+              <div class="subcard-head"><span>3. 短停留占位 + 一对一消歧导出</span><span class="pill-mini innov">创新</span></div>
+              <div class="subcard-body">&lt;30s 先占位防错配后剔除；每端点至多归属 1 次到访，按编号回填导出三列终表（进入 / 出店 / 停留时间）。</div>
             </div>
           </div>
         </div>
